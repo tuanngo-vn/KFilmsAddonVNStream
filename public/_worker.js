@@ -1,4 +1,5 @@
-const API_BASE = 'https://phimapi.com';
+const API_PRIMARY = 'https://phimapi.com';
+const API_FALLBACK = 'https://ophim1.com';
 const IMG_BASE = 'https://phimimg.com';
 
 const FETCH_HEADERS = {
@@ -6,13 +7,57 @@ const FETCH_HEADERS = {
   'Accept': 'application/json'
 };
 
-function formatImageUrl(imgPath) {
+async function fetchSingle(url, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: FETCH_HEADERS,
+      signal: controller.signal,
+    });
+    if (res.ok) {
+      return res;
+    }
+  } catch (e) {
+    // Timeout or network error — fail fast
+  } finally {
+    clearTimeout(timer);
+  }
+  return null;
+}
+
+async function fetchWithFallback(path, { timeoutMs = 2500 } = {}) {
+  // Try primary API (phimapi.com) with 2.5s fast timeout
+  let res = await fetchSingle(`${API_PRIMARY}${path}`, timeoutMs);
+  if (res) return { res, source: 'primary' };
+
+  // Fallback immediately to secondary API (ophim1.com) if primary hangs or fails
+  res = await fetchSingle(`${API_FALLBACK}${path}`, timeoutMs);
+  if (res) return { res, source: 'fallback' };
+
+  return { res: null, source: null };
+}
+
+function formatImageUrl(imgPath, cdnDomain = 'https://phimimg.com') {
   if (!imgPath) return '';
   if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
     return imgPath;
   }
   const cleanPath = imgPath.replace(/^\/+/, '');
-  return `${IMG_BASE}/${cleanPath}`;
+  let base = cdnDomain.replace(/\/+$/, '');
+
+  if (base.includes('ophim')) {
+    if (!cleanPath.startsWith('uploads/')) {
+      base = 'https://img.ophim.live/uploads/movies';
+    } else {
+      base = 'https://img.ophim.live';
+    }
+  }
+
+  if (cleanPath.startsWith('uploads/') && base.endsWith('/uploads')) {
+    return `${base.replace(/\/uploads$/, '')}/${cleanPath}`;
+  }
+  return `${base}/${cleanPath}`;
 }
 
 const manifest = {
@@ -768,13 +813,22 @@ function getHtmlPage(domain) {
       loadMovies(false);
     }
 
+    const CATEGORY_NAMES = {
+      'vnstream-top': 'Danh Sách Phim Mới Cập Nhật',
+      'vnstream-single': 'Danh Sách Phim Lẻ',
+      'vnstream-series': 'Danh Sách Phim Bộ',
+      'vnstream-anime': 'Danh Sách Hoạt Hình',
+      'vnstream-tvshows': 'Danh Sách TV Shows'
+    };
+
     function switchCategory(catalogId, btn) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentCatalog = catalogId;
       currentSearch = '';
       document.getElementById('searchInput').value = '';
-      document.getElementById('sectionTitle').innerText = btn.innerText.replace(/[^\w\s\u00C0-\u1EF9]/gi, '').trim();
+      const cleanTitle = CATEGORY_NAMES[catalogId] || btn.innerText.replace(/\p{Extended_Pictographic}|\p{Emoji_Presentation}/gu, '').trim();
+      document.getElementById('sectionTitle').innerText = cleanTitle;
       loadMovies(true);
     }
 
@@ -783,6 +837,11 @@ function getHtmlPage(domain) {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
         currentSearch = e.target.value.trim();
+        if (currentSearch) {
+          document.getElementById('sectionTitle').innerText = 'Kết quả tìm kiếm: "' + currentSearch + '"';
+        } else {
+          document.getElementById('sectionTitle').innerText = CATEGORY_NAMES[currentCatalog] || 'Danh Sách Phim';
+        }
         loadMovies(true);
       }, 500);
     });
@@ -799,6 +858,12 @@ function getHtmlPage(domain) {
         const res = await fetch('/meta/movie/' + id + '.json');
         const data = await res.json();
         const movie = data.meta;
+        // /meta/ returns {meta: null} (still HTTP 200) when the upstream
+        // phimapi.com lookup failed or timed out — reading movie.name below
+        // would throw, and the generic catch couldn't tell this apart from
+        // a real network error, leaving modalDesc stuck on "Đang lấy thông
+        // tin..." next to "Lỗi thông tin" forever.
+        if (!movie) throw new Error('meta_null');
         currentMovie = movie;
 
         document.getElementById('modalTitle').innerText = movie.name;
@@ -807,7 +872,10 @@ function getHtmlPage(domain) {
         document.getElementById('modalPoster').src = movie.poster;
         document.getElementById('modalBg').src = movie.background || movie.poster;
       } catch (err) {
+        currentMovie = null;
         document.getElementById('modalTitle').innerText = 'Lỗi thông tin';
+        document.getElementById('modalSub').innerText = '';
+        document.getElementById('modalDesc').innerText = 'Không lấy được thông tin phim (nguồn dữ liệu đang chậm), vui lòng đóng và thử lại sau.';
       }
     }
 
@@ -815,14 +883,34 @@ function getHtmlPage(domain) {
       document.getElementById('movieModal').classList.remove('active');
     }
 
-    function openInKFilms() {
+    async function openInKFilms() {
       if (!currentMovie) return;
       const domainHost = window.location.hostname;
-      const episodesUrl = 'https://' + domainHost + '/episodes/' + currentMovie.id + '.json';
-      const kfilmsUrl = 'kfilms://' + episodesUrl + '?kfname=' + encodeURIComponent(currentMovie.name) + '&kftype=group';
+      const kfname = 'kfname=' + encodeURIComponent(currentMovie.name);
 
-      window.location.href = kfilmsUrl;
-      showToast('Đang kích hoạt KFilms Pro...');
+      if (currentMovie.type === 'series') {
+        // Series: hand off the /episodes/{id}.json list (&kftype=group) so
+        // KFilms imports every episode as one group in a single shot.
+        const episodesUrl = 'https://' + domainHost + '/episodes/' + currentMovie.id + '.json';
+        window.location.href = 'kfilms://' + episodesUrl + '?' + kfname + '&kftype=group';
+        showToast('Đang kích hoạt KFilms Pro...');
+        return;
+      }
+
+      // Movie: resolve the raw stream link up front (via the same
+      // /episodes/ endpoint, which already retries phimapi.com's flaky
+      // upstream) instead of handing KFilms a link that still depends on
+      // this site being reachable every time the user presses play later.
+      try {
+        const res = await fetch('https://' + domainHost + '/episodes/' + currentMovie.id + '.json');
+        const data = await res.json();
+        const rawUrl = data.episodes && data.episodes[0] && data.episodes[0].url;
+        if (!rawUrl) throw new Error('no stream url');
+        window.location.href = 'kfilms://' + rawUrl + '?' + kfname;
+        showToast('Đang kích hoạt KFilms Pro...');
+      } catch (err) {
+        showToast('Không lấy được link phát, thử lại sau.');
+      }
     }
 
     function showToast(msg) {
@@ -848,6 +936,7 @@ export default {
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
       'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'public, max-age=180, s-maxage=360, stale-while-revalidate=60',
     };
 
     if (request.method === 'OPTIONS') {
@@ -873,35 +962,34 @@ export default {
       }
 
       try {
-        const res = await fetch(`${API_BASE}/phim/${slug}`, { headers: FETCH_HEADERS });
-        if (!res.ok) {
+        const { res, source } = await fetchWithFallback(`/phim/${slug}`);
+        if (!res || !res.ok) {
           return new Response(JSON.stringify({ error: 'Movie not found' }), { status: 404, headers: corsHeaders });
         }
 
         const data = await res.json();
         const movie = data.movie || {};
-        const episodeGroups = data.episodes || [];
+        const cdnDomain = source === 'fallback' 
+          ? (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://img.ophim.live/uploads/movies')
+          : (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://phimimg.com');
 
-        const formattedEpisodes = [];
-        episodeGroups.forEach(group => {
-          (group.server_data || []).forEach(ep => {
-            formattedEpisodes.push({
-              name: ep.name,
-              slug: ep.slug,
-              filename: ep.filename,
-              link_m3u8: ep.link_m3u8,
-              link_embed: ep.link_embed,
-              server_name: group.server_name
-            });
-          });
-        });
+        const episodeList = (data.episodes && data.episodes[0] && data.episodes[0].server_data) || [];
+
+        const formattedEpisodes = episodeList.map(ep => ({
+          name: ep.name,
+          slug: ep.slug,
+          filename: ep.filename,
+          url: ep.link_m3u8,
+          link_embed: ep.link_embed,
+          server_name: data.episodes[0]?.server_name || 'Vietsub'
+        }));
 
         return new Response(JSON.stringify({
           title: movie.name || slug,
           origin_name: movie.origin_name || '',
           slug: movie.slug || slug,
-          poster: formatImageUrl(movie.poster_url || movie.thumb_url),
-          banner: formatImageUrl(movie.thumb_url || movie.poster_url),
+          poster: formatImageUrl(movie.poster_url || movie.thumb_url, cdnDomain),
+          banner: formatImageUrl(movie.thumb_url || movie.poster_url, cdnDomain),
           episodes: formattedEpisodes
         }), { headers: corsHeaders });
       } catch (err) {
@@ -920,18 +1008,23 @@ export default {
       }
 
       try {
-        const res = await fetch(`${API_BASE}/phim/${slug}`, { headers: FETCH_HEADERS });
-        if (!res.ok) {
+        const { res } = await fetchWithFallback(`/phim/${slug}`);
+        if (!res || !res.ok) {
           return new Response('Movie not found', { status: 404 });
         }
 
         const data = await res.json();
         let streamUrl = null;
 
+        const epSlug = url.searchParams.get('ep');
+
         if (data.episodes && data.episodes.length > 0) {
           const episodeList = data.episodes[0].server_data || [];
-          if (episodeList.length > 0) {
-            streamUrl = episodeList[0].link_m3u8;
+          const episode = epSlug
+            ? episodeList.find((e) => e.slug === epSlug) || episodeList[0]
+            : episodeList[0];
+          if (episode) {
+            streamUrl = episode.link_m3u8;
           }
         }
 
@@ -962,21 +1055,25 @@ export default {
       }
 
       try {
-        let fetchUrl = `${API_BASE}/danh-sach/phim-moi-cap-nhat?page=${page}`;
+        let fetchUrlPath = `/danh-sach/phim-moi-cap-nhat?page=${page}`;
         
         if (searchQuery) {
-          fetchUrl = `${API_BASE}/v1/api/tim-kiem?keyword=${encodeURIComponent(searchQuery)}&page=${page}`;
+          fetchUrlPath = `/v1/api/tim-kiem?keyword=${encodeURIComponent(searchQuery)}&page=${page}`;
         } else if (catalogId === 'vnstream-single') {
-          fetchUrl = `${API_BASE}/v1/api/danh-sach/phim-le?page=${page}`;
+          fetchUrlPath = `/v1/api/danh-sach/phim-le?page=${page}`;
         } else if (catalogId === 'vnstream-series') {
-          fetchUrl = `${API_BASE}/v1/api/danh-sach/phim-bo?page=${page}`;
+          fetchUrlPath = `/v1/api/danh-sach/phim-bo?page=${page}`;
         } else if (catalogId === 'vnstream-anime') {
-          fetchUrl = `${API_BASE}/v1/api/danh-sach/hoat-hinh?page=${page}`;
+          fetchUrlPath = `/v1/api/danh-sach/hoat-hinh?page=${page}`;
         } else if (catalogId === 'vnstream-tvshows') {
-          fetchUrl = `${API_BASE}/v1/api/danh-sach/tv-shows?page=${page}`;
+          fetchUrlPath = `/v1/api/danh-sach/tv-shows?page=${page}`;
         }
 
-        const res = await fetch(fetchUrl, { headers: FETCH_HEADERS });
+        const { res, source } = await fetchWithFallback(fetchUrlPath);
+        if (!res || !res.ok) {
+          return new Response(JSON.stringify({ metas: [] }), { headers: corsHeaders });
+        }
+
         const data = await res.json();
 
         let items = [];
@@ -986,8 +1083,12 @@ export default {
           items = data.data.items;
         }
 
+        const cdnDomain = source === 'fallback' 
+          ? (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://img.ophim.live/uploads/movies')
+          : (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://phimimg.com');
+
         const metas = items.map((item) => {
-          const posterUrl = formatImageUrl(item.poster_url || item.thumb_url);
+          const posterUrl = formatImageUrl(item.poster_url || item.thumb_url, cdnDomain);
 
           return {
             id: item.slug,
@@ -1010,7 +1111,11 @@ export default {
       const slug = parts[3];
 
       try {
-        const res = await fetch(`${API_BASE}/phim/${slug}`, { headers: FETCH_HEADERS });
+        const { res, source } = await fetchWithFallback(`/phim/${slug}`);
+        if (!res || !res.ok) {
+          return new Response(JSON.stringify({ meta: null }), { headers: corsHeaders });
+        }
+
         const data = await res.json();
         const movie = data.movie;
 
@@ -1018,8 +1123,12 @@ export default {
           return new Response(JSON.stringify({ meta: null }), { headers: corsHeaders });
         }
 
-        const posterUrl = formatImageUrl(movie.poster_url || movie.thumb_url);
-        const backgroundUrl = formatImageUrl(movie.thumb_url || movie.poster_url);
+        const cdnDomain = source === 'fallback'
+          ? (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://img.ophim.live/uploads/movies')
+          : (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://phimimg.com');
+
+        const posterUrl = formatImageUrl(movie.poster_url || movie.thumb_url, cdnDomain);
+        const backgroundUrl = formatImageUrl(movie.thumb_url || movie.poster_url, cdnDomain);
 
         const meta = {
           id: movie.slug,
@@ -1044,11 +1153,15 @@ export default {
       const slug = idStr.split(':')[0];
 
       try {
-        const res = await fetch(`${API_BASE}/phim/${slug}`, { headers: FETCH_HEADERS });
-        const data = await res.json();
-        const movie = data.movie;
+        const { res } = await fetchWithFallback(`/phim/${slug}`);
+        let movieTitle = slug;
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data.movie && data.movie.name) {
+            movieTitle = data.movie.name;
+          }
+        }
 
-        const movieTitle = movie ? movie.name : slug;
         const domain = url.hostname;
         
         const episodesUrl = `https://${domain}/episodes/${slug}.json`;
