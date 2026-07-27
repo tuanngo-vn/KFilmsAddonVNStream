@@ -1,0 +1,7 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "films-addon",
+  "main": "src/index.js",
+  "compatibility_date": "2024-01-01",
+  "account_id": "d3c0f53c02d1d59505813b989da05511"
+}

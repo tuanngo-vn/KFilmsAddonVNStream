@@ -1,0 +1,413 @@
+{
+    "id": "community.VNStream",
+    "version": "1.5.3",
+    "behaviorHints": {
+        "configurable": false,
+        "configurationRequired": false
+    },
+    "config": [
+        {
+            "key": "children_mode",
+            "type": "text",
+            "title": "Children Mode",
+            "required": "false",
+            "default": "0"
+        }
+    ],
+    "catalogs": [
+        {
+            "type": "movie",
+            "name": "[VNStream] Mới cập nhật",
+            "id": "vnstream-top",
+            "extra": [
+                {
+                    "name": "skip",
+                    "value": "24"
+                },
+                {
+                    "name": "genre",
+                    "optionsLimit": 16,
+                    "isRequired": false,
+                    "options": [
+                        "Hành Động",
+                        "Cổ Trang",
+                        "Chiến Tranh",
+                        "Viễn Tưởng",
+                        "Kinh Dị",
+                        "Tài Liệu",
+                        "Bí Ẩn",
+                        "Tình Cảm",
+                        "Tâm Lý",
+                        "Thể Thao",
+                        "Phiêu Lưu",
+                        "Âm Nhạc",
+                        "Gia Đình",
+                        "Học Đường",
+                        "Hài Hước",
+                        "Hình Sự",
+                        "Võ Thuật",
+                        "Khoa Học",
+                        "Thần Thoại",
+                        "Chính Kịch",
+                        "Kinh Điển"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "movie",
+            "name": "[VNStream] Phụ đề",
+            "id": "vnstream-vietsub",
+            "extra": [
+                {
+                    "name": "skip",
+                    "value": "24"
+                },
+                {
+                    "name": "search"
+                },
+                {
+                    "name": "genre",
+                    "optionsLimit": 16,
+                    "isRequired": false,
+                    "options": [
+                        "Hành Động",
+                        "Cổ Trang",
+                        "Chiến Tranh",
+                        "Viễn Tưởng",
+                        "Kinh Dị",
+                        "Tài Liệu",
+                        "Bí Ẩn",
+                        "Tình Cảm",
+                        "Tâm Lý",
+                        "Thể Thao",
+                        "Phiêu Lưu",
+                        "Âm Nhạc",
+                        "Gia Đình",
+                        "Học Đường",
+                        "Hài Hước",
+                        "Hình Sự",
+                        "Võ Thuật",
+                        "Khoa Học",
+                        "Thần Thoại",
+                        "Chính Kịch",
+                        "Kinh Điển"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "movie",
+            "name": "[VNStream] Thuyết minh",
+            "id": "vnstream-voice-over",
+            "extra": [
+                {
+                    "name": "skip",
+                    "value": "24"
+                },
+                {
+                    "name": "search"
+                },
+                {
+                    "name": "genre",
+                    "optionsLimit": 16,
+                    "isRequired": false,
+                    "options": [
+                        "Hành Động",
+                        "Cổ Trang",
+                        "Chiến Tranh",
+                        "Viễn Tưởng",
+                        "Kinh Dị",
+                        "Tài Liệu",
+                        "Bí Ẩn",
+                        "Tình Cảm",
+                        "Tâm Lý",
+                        "Thể Thao",
+                        "Phiêu Lưu",
+                        "Âm Nhạc",
+                        "Gia Đình",
+                        "Học Đường",
+                        "Hài Hước",
+                        "Hình Sự",
+                        "Võ Thuật",
+                        "Khoa Học",
+                        "Thần Thoại",
+                        "Chính Kịch",
+                        "Kinh Điển"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "movie",
+            "name": "[VNStream] Lồng tiếng",
+            "id": "vnstream-dubbed",
+            "extra": [
+                {
+                    "name": "skip",
+                    "value": "24"
+                },
+                {
+                    "name": "search"
+                },
+                {
+                    "name": "genre",
+                    "optionsLimit": 16,
+                    "isRequired": false,
+                    "options": [
+                        "Hành Động",
+                        "Cổ Trang",
+                        "Chiến Tranh",
+                        "Viễn Tưởng",
+                        "Kinh Dị",
+                        "Tài Liệu",
+                        "Bí Ẩn",
+                        "Tình Cảm",
+                        "Tâm Lý",
+                        "Thể Thao",
+                        "Phiêu Lưu",
+                        "Âm Nhạc",
+                        "Gia Đình",
+                        "Học Đường",
+                        "Hài Hước",
+                        "Hình Sự",
+                        "Võ Thuật",
+                        "Khoa Học",
+                        "Thần Thoại",
+                        "Chính Kịch",
+                        "Kinh Điển"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "movie",
+            "name": "[VNStream] Năm phát hành",
+            "id": "vnstream-year",
+            "extra": [
+                {
+                    "name": "skip",
+                    "value": "24"
+                },
+                {
+                    "name": "genre",
+                    "optionsLimit": 16,
+                    "isRequired": false,
+                    "options": [
+                        "2026",
+                        "2025",
+                        "2024",
+                        "2023",
+                        "2022",
+                        "2021",
+                        "2020",
+                        "2019",
+                        "2018",
+                        "2017",
+                        "2016",
+                        "2015"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "series",
+            "name": "[VNStream] Mới cập nhật",
+            "id": "vnstream-top",
+            "extra": [
+                {
+                    "name": "skip",
+                    "value": "24"
+                },
+                {
+                    "name": "genre",
+                    "optionsLimit": 16,
+                    "isRequired": false,
+                    "options": [
+                        "Hành Động",
+                        "Cổ Trang",
+                        "Chiến Tranh",
+                        "Viễn Tưởng",
+                        "Kinh Dị",
+                        "Tài Liệu",
+                        "Bí Ẩn",
+                        "Tình Cảm",
+                        "Tâm Lý",
+                        "Thể Thao",
+                        "Phiêu Lưu",
+                        "Âm Nhạc",
+                        "Gia Đình",
+                        "Học Đường",
+                        "Hài Hước",
+                        "Hình Sự",
+                        "Võ Thuật",
+                        "Khoa Học",
+                        "Thần Thoại",
+                        "Chính Kịch",
+                        "Kinh Điển"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "series",
+            "name": "[VNStream] Phụ đề",
+            "id": "vnstream-vietsub",
+            "extra": [
+                {
+                    "name": "skip",
+                    "value": "24"
+                },
+                {
+                    "name": "genre",
+                    "optionsLimit": 16,
+                    "isRequired": false,
+                    "options": [
+                        "Hành Động",
+                        "Cổ Trang",
+                        "Chiến Tranh",
+                        "Viễn Tưởng",
+                        "Kinh Dị",
+                        "Tài Liệu",
+                        "Bí Ẩn",
+                        "Tình Cảm",
+                        "Tâm Lý",
+                        "Thể Thao",
+                        "Phiêu Lưu",
+                        "Âm Nhạc",
+                        "Gia Đình",
+                        "Học Đường",
+                        "Hài Hước",
+                        "Hình Sự",
+                        "Võ Thuật",
+                        "Khoa Học",
+                        "Thần Thoại",
+                        "Chính Kịch",
+                        "Kinh Điển"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "series",
+            "name": "[VNStream] Thuyết minh",
+            "id": "vnstream-voice-over",
+            "extra": [
+                {
+                    "name": "skip",
+                    "value": "24"
+                },
+                {
+                    "name": "genre",
+                    "optionsLimit": 16,
+                    "isRequired": false,
+                    "options": [
+                        "Hành Động",
+                        "Cổ Trang",
+                        "Chiến Tranh",
+                        "Viễn Tưởng",
+                        "Kinh Dị",
+                        "Tài Liệu",
+                        "Bí Ẩn",
+                        "Tình Cảm",
+                        "Tâm Lý",
+                        "Thể Thao",
+                        "Phiêu Lưu",
+                        "Âm Nhạc",
+                        "Gia Đình",
+                        "Học Đường",
+                        "Hài Hước",
+                        "Hình Sự",
+                        "Võ Thuật",
+                        "Khoa Học",
+                        "Thần Thoại",
+                        "Chính Kịch",
+                        "Kinh Điển"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "series",
+            "name": "[VNStream] Lồng tiếng",
+            "id": "vnstream-dubbed",
+            "extra": [
+                {
+                    "name": "skip",
+                    "value": "24"
+                },
+                {
+                    "name": "genre",
+                    "optionsLimit": 16,
+                    "isRequired": false,
+                    "options": [
+                        "Hành Động",
+                        "Cổ Trang",
+                        "Chiến Tranh",
+                        "Viễn Tưởng",
+                        "Kinh Dị",
+                        "Tài Liệu",
+                        "Bí Ẩn",
+                        "Tình Cảm",
+                        "Tâm Lý",
+                        "Thể Thao",
+                        "Phiêu Lưu",
+                        "Âm Nhạc",
+                        "Gia Đình",
+                        "Học Đường",
+                        "Hài Hước",
+                        "Hình Sự",
+                        "Võ Thuật",
+                        "Khoa Học",
+                        "Thần Thoại",
+                        "Chính Kịch",
+                        "Kinh Điển"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "series",
+            "name": "[VNStream] Năm phát hành",
+            "id": "vnstream-year",
+            "extra": [
+                {
+                    "name": "skip",
+                    "value": "24"
+                },
+                {
+                    "name": "genre",
+                    "optionsLimit": 16,
+                    "isRequired": false,
+                    "options": [
+                        "2026",
+                        "2025",
+                        "2024",
+                        "2023",
+                        "2022",
+                        "2021",
+                        "2020",
+                        "2019",
+                        "2018",
+                        "2017",
+                        "2016",
+                        "2015"
+                    ]
+                }
+            ]
+        }
+    ],
+    "resources": [
+        "catalog",
+        "stream",
+        "meta"
+    ],
+    "types": [
+        "movie",
+        "series"
+    ],
+    "name": "VNStream",
+    "description": "Xem phim hay Vietsub, thuyết minh, lồng tiếng tổng hợp từ nhiều nguồn miễn phí | Popular Vietsub Movies and TV shows",
+    "logo": "https://films-addon.pages.dev/static/logo@256.png",
+    "background": "https://films-addon.pages.dev/static/background.png"
+}
