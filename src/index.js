@@ -1,9 +1,19 @@
 const API_BASE = 'https://phimapi.com';
+const IMG_BASE = 'https://phimimg.com';
 
 const FETCH_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   'Accept': 'application/json'
 };
+
+function formatImageUrl(imgPath) {
+  if (!imgPath) return '';
+  if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
+    return imgPath;
+  }
+  const cleanPath = imgPath.replace(/^\/+/, '');
+  return `${IMG_BASE}/${cleanPath}`;
+}
 
 const manifest = {
   "id": "community.VNStream",
@@ -932,9 +942,7 @@ export default {
         }
 
         const metas = items.map((item) => {
-          const posterUrl = item.poster_url?.startsWith('http')
-            ? item.poster_url
-            : `${API_BASE}/uploads/movies/${item.poster_url || item.thumb_url}`;
+          const posterUrl = formatImageUrl(item.poster_url || item.thumb_url);
 
           return {
             id: item.slug,
@@ -965,18 +973,15 @@ export default {
           return new Response(JSON.stringify({ meta: null }), { headers: corsHeaders });
         }
 
-        const posterUrl = movie.poster_url?.startsWith('http')
-          ? movie.poster_url
-          : `${API_BASE}/uploads/movies/${movie.poster_url || movie.thumb_url}`;
+        const posterUrl = formatImageUrl(movie.poster_url || movie.thumb_url);
+        const backgroundUrl = formatImageUrl(movie.thumb_url || movie.poster_url);
 
         const meta = {
           id: movie.slug,
           type: movie.type === 'single' ? 'movie' : 'series',
           name: movie.name,
           poster: posterUrl,
-          background: movie.thumb_url?.startsWith('http')
-            ? movie.thumb_url
-            : `${API_BASE}/uploads/movies/${movie.thumb_url}`,
+          background: backgroundUrl,
           description: movie.content?.replace(/<[^>]*>?/gm, '') || '',
           genres: movie.category?.map((c) => c.name) || [],
           releaseInfo: `${movie.year}`,
