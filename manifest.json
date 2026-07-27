@@ -406,8 +406,8 @@
         "movie",
         "series"
     ],
-    "name": "VNStream",
-    "description": "Xem phim hay Vietsub, thuyết minh, lồng tiếng tổng hợp từ nhiều nguồn miễn phí | Popular Vietsub Movies and TV shows",
+    "name": "FILMS ADDON",
+    "description": "Xem phim hay Vietsub, thuyết minh, lồng tiếng tổng hợp từ nhiều nguồn miễn phí",
     "logo": "https://films-addon.pages.dev/static/logo@256.png",
     "background": "https://films-addon.pages.dev/static/background.png"
 }

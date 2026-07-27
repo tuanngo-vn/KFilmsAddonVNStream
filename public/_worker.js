@@ -24,7 +24,7 @@ const manifest = {
   "catalogs": [
     {
       "type": "movie",
-      "name": "[VNStream] Mới cập nhật",
+      "name": "[FILMS ADDON] Mới cập nhật",
       "id": "vnstream-top",
       "extra": [
         { "name": "skip", "value": "24" }
@@ -40,7 +40,7 @@ const manifest = {
     "movie",
     "series"
   ],
-  "name": "VNStream",
+  "name": "FILMS ADDON",
   "description": "Xem phim hay Vietsub, thuyết minh, lồng tiếng tổng hợp từ nhiều nguồn miễn phí",
   "logo": "https://films-addon.pages.dev/static/logo@256.png",
   "background": "https://films-addon.pages.dev/static/background.png"
@@ -52,7 +52,7 @@ function getHtmlPage(domain) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KFilms Stream Portal | Thư Viện Phim Hay</title>
+  <title>FILMS ADDON | Thư Viện Phim Hay</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -120,7 +120,7 @@ function getHtmlPage(domain) {
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       color: white;
       box-shadow: 0 4px 20px var(--accent-glow);
     }
@@ -197,16 +197,16 @@ function getHtmlPage(domain) {
       color: var(--text-muted);
       font-size: 1.05rem;
       line-height: 1.6;
-      max-width: 600px;
+      max-width: 650px;
     }
 
     .badge-app {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      background: rgba(168, 85, 247, 0.15);
-      border: 1px solid rgba(168, 85, 247, 0.3);
-      color: #c084fc;
+      background: rgba(236, 72, 153, 0.15);
+      border: 1px solid rgba(236, 72, 153, 0.3);
+      color: #f472b6;
       padding: 0.4rem 0.9rem;
       border-radius: 99px;
       font-size: 0.85rem;
@@ -537,8 +537,8 @@ function getHtmlPage(domain) {
 
   <header>
     <a href="#" class="brand">
-      <div class="brand-icon">K</div>
-      <span class="brand-title">KFilms Stream</span>
+      <div class="brand-icon">FA</div>
+      <span class="brand-title">FILMS ADDON</span>
     </a>
     <div class="search-box">
       <svg class="search-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -549,8 +549,8 @@ function getHtmlPage(domain) {
   <main>
     <div class="hero-banner">
       <div class="hero-text">
-        <div class="badge-app">🚀 KFilms App Integration</div>
-        <h2>Xem Phim Chất Lượng Cao Trên KFilms</h2>
+        <div class="badge-app">⚠️ Yêu cầu KFILMS Pro</div>
+        <h2>FILMS ADDON</h2>
         <p>Chọn bất kỳ bộ phim nào bên dưới, nhấn <b>"Mở Trong KFilms App"</b> để tự động thêm phim vào Mediabox và thưởng thức ngay!</p>
       </div>
     </div>
@@ -579,7 +579,7 @@ function getHtmlPage(domain) {
         <div class="action-buttons">
           <button id="btnKFilms" class="btn-primary-kfilms" onclick="openInKFilms()">
             <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            ▶ MỞ TRONG KFILMS APP
+            ▶ Mở Trong KFilms App
           </button>
           
           <button class="btn-secondary" onclick="copyKFilmsLink()">
@@ -589,7 +589,7 @@ function getHtmlPage(domain) {
 
           <a id="btnDirect" class="btn-secondary" href="#" target="_blank">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-            Xem Trực Tiếp Trên Web / Player
+            Xem Trực Tiếp บน Web / Player
           </a>
         </div>
       </div>
@@ -881,12 +881,12 @@ export default {
 
         const streams = [
           {
-            name: 'KFilms Pro',
-            title: `Thêm & Mở trên KFilms App\n${movieTitle}`,
+            name: 'FILMS ADDON',
+            title: `Mở Trong KFilms App\n(Yêu cầu KFILMS Pro)\n${movieTitle}`,
             externalUrl: kfilmsDeepLink,
           },
           {
-            name: 'KFilms Direct',
+            name: 'Direct Stream',
             title: `Xem Trực Tiếp\n${movieTitle}`,
             url: playUrl,
           },
@@ -898,6 +898,6 @@ export default {
       }
     }
 
-    return new Response('KFilms Portal Active', { status: 200, headers: corsHeaders });
+    return new Response('FILMS ADDON Active', { status: 200, headers: corsHeaders });
   },
 };

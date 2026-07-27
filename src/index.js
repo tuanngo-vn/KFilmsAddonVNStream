@@ -1,5 +1,10 @@
 const API_BASE = 'https://phimapi.com';
 
+const FETCH_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'application/json'
+};
+
 const manifest = {
   "id": "community.VNStream",
   "version": "1.5.3",
@@ -19,7 +24,7 @@ const manifest = {
   "catalogs": [
     {
       "type": "movie",
-      "name": "[VNStream] Mới cập nhật",
+      "name": "[FILMS ADDON] Mới cập nhật",
       "id": "vnstream-top",
       "extra": [
         { "name": "skip", "value": "24" }
@@ -35,7 +40,7 @@ const manifest = {
     "movie",
     "series"
   ],
-  "name": "VNStream",
+  "name": "FILMS ADDON",
   "description": "Xem phim hay Vietsub, thuyết minh, lồng tiếng tổng hợp từ nhiều nguồn miễn phí",
   "logo": "https://films-addon.pages.dev/static/logo@256.png",
   "background": "https://films-addon.pages.dev/static/background.png"
@@ -47,7 +52,7 @@ function getHtmlPage(domain) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KFilms Stream Portal | Thư Viện Phim Hay</title>
+  <title>FILMS ADDON | Thư Viện Phim Hay</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -85,7 +90,6 @@ function getHtmlPage(domain) {
       font-family: 'Outfit', sans-serif;
     }
 
-    /* Header Navbar */
     header {
       position: sticky;
       top: 0;
@@ -116,7 +120,7 @@ function getHtmlPage(domain) {
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       color: white;
       box-shadow: 0 4px 20px var(--accent-glow);
     }
@@ -162,7 +166,6 @@ function getHtmlPage(domain) {
       pointer-events: none;
     }
 
-    /* Container */
     main {
       max-width: 1400px;
       margin: 0 auto;
@@ -194,16 +197,16 @@ function getHtmlPage(domain) {
       color: var(--text-muted);
       font-size: 1.05rem;
       line-height: 1.6;
-      max-width: 600px;
+      max-width: 650px;
     }
 
     .badge-app {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      background: rgba(168, 85, 247, 0.15);
-      border: 1px solid rgba(168, 85, 247, 0.3);
-      color: #c084fc;
+      background: rgba(236, 72, 153, 0.15);
+      border: 1px solid rgba(236, 72, 153, 0.3);
+      color: #f472b6;
       padding: 0.4rem 0.9rem;
       border-radius: 99px;
       font-size: 0.85rem;
@@ -211,7 +214,6 @@ function getHtmlPage(domain) {
       margin-bottom: 1rem;
     }
 
-    /* Movie Grid */
     .section-title {
       font-size: 1.5rem;
       font-weight: 700;
@@ -326,7 +328,6 @@ function getHtmlPage(domain) {
       text-overflow: ellipsis;
     }
 
-    /* Modal */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -536,8 +537,8 @@ function getHtmlPage(domain) {
 
   <header>
     <a href="#" class="brand">
-      <div class="brand-icon">K</div>
-      <span class="brand-title">KFilms Stream</span>
+      <div class="brand-icon">FA</div>
+      <span class="brand-title">FILMS ADDON</span>
     </a>
     <div class="search-box">
       <svg class="search-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -548,8 +549,8 @@ function getHtmlPage(domain) {
   <main>
     <div class="hero-banner">
       <div class="hero-text">
-        <div class="badge-app">🚀 KFilms App Integration</div>
-        <h2>Xem Phim Chất Lượng Cao Trên KFilms</h2>
+        <div class="badge-app">⚠️ Yêu cầu KFILMS Pro</div>
+        <h2>FILMS ADDON</h2>
         <p>Chọn bất kỳ bộ phim nào bên dưới, nhấn <b>"Mở Trong KFilms App"</b> để tự động thêm phim vào Mediabox và thưởng thức ngay!</p>
       </div>
     </div>
@@ -560,7 +561,6 @@ function getHtmlPage(domain) {
     </div>
   </main>
 
-  <!-- Modal Detail -->
   <div id="movieModal" class="modal-backdrop">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal()">✕</button>
@@ -579,7 +579,7 @@ function getHtmlPage(domain) {
         <div class="action-buttons">
           <button id="btnKFilms" class="btn-primary-kfilms" onclick="openInKFilms()">
             <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            ▶ MỞ TRONG KFILMS APP
+            ▶ Mở Trong KFilms App
           </button>
           
           <button class="btn-secondary" onclick="copyKFilmsLink()">
@@ -600,9 +600,7 @@ function getHtmlPage(domain) {
 
   <script>
     let currentMovie = null;
-    const DOMAIN = "${domain}";
 
-    // Fetch initial movies
     async function loadMovies(search = '') {
       const grid = document.getElementById('movieGrid');
       grid.innerHTML = '<div class="loading-spinner">Đang tải danh sách phim...</div>';
@@ -642,7 +640,6 @@ function getHtmlPage(domain) {
       }
     }
 
-    // Search event
     let searchTimeout;
     document.getElementById('searchInput').addEventListener('input', (e) => {
       clearTimeout(searchTimeout);
@@ -651,7 +648,6 @@ function getHtmlPage(domain) {
       }, 500);
     });
 
-    // Open detail modal
     async function openMovieDetail(id) {
       const modal = document.getElementById('movieModal');
       modal.classList.add('active');
@@ -683,16 +679,13 @@ function getHtmlPage(domain) {
       document.getElementById('movieModal').classList.remove('active');
     }
 
-    // Open in KFilms App via Deep Link
     function openInKFilms() {
       if (!currentMovie) return;
       const domainHost = window.location.hostname;
       const playUrl = 'https://' + domainHost + '/play/' + currentMovie.id;
       const kfilmsUrl = 'kfilms://' + playUrl + '?kfname=' + encodeURIComponent(currentMovie.name);
 
-      // Trigger custom scheme link to open KFilms App
       window.location.href = kfilmsUrl;
-      
       showToast('Đang kích hoạt ứng dụng KFilms...');
     }
 
@@ -713,7 +706,6 @@ function getHtmlPage(domain) {
       setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    // Load initial movies on start
     loadMovies();
   </script>
 </body>
@@ -736,20 +728,16 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // 1. Web Page Homepage (When user opens https://films-addon.pages.dev in browser)
     if (path === '/' || path === '/index.html') {
       return new Response(getHtmlPage(url.hostname), {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
       });
     }
 
-    // 2. Manifest Endpoint
     if (path === '/manifest.json' || path === '/guest/manifest.json') {
       return new Response(JSON.stringify(manifest), { headers: corsHeaders });
     }
 
-    // 3. Resolve Link & Redirect 302 to real m3u8 stream link
-    // Route: /play/:id or /play?id=:id
     if (path.startsWith('/play/') || path === '/play') {
       let slug = path.replace('/play/', '').replace('/play', '');
       if (!slug && url.searchParams.has('id')) {
@@ -761,7 +749,7 @@ export default {
       }
 
       try {
-        const res = await fetch(`${API_BASE}/phim/${slug}`);
+        const res = await fetch(`${API_BASE}/phim/${slug}`, { headers: FETCH_HEADERS });
         if (!res.ok) {
           return new Response('Movie not found', { status: 404 });
         }
@@ -780,14 +768,12 @@ export default {
           return new Response('Stream link not found', { status: 404 });
         }
 
-        // 302 Redirect directly to real m3u8 link
         return Response.redirect(streamUrl, 302);
       } catch (err) {
         return new Response(`Error resolving stream: ${err.message}`, { status: 500 });
       }
     }
 
-    // 4. Catalog Endpoint (/catalog/:type/:id.json or /catalog/:type/:id/:extra.json)
     if (path.startsWith('/catalog/')) {
       const parts = path.replace('.json', '').split('/');
       const type = parts[2];
@@ -810,7 +796,7 @@ export default {
           fetchUrl = `${API_BASE}/v1/api/tim-kiem?keyword=${encodeURIComponent(searchQuery)}&page=${page}`;
         }
 
-        const res = await fetch(fetchUrl);
+        const res = await fetch(fetchUrl, { headers: FETCH_HEADERS });
         const data = await res.json();
 
         let items = [];
@@ -840,14 +826,13 @@ export default {
       }
     }
 
-    // 5. Meta Endpoint (/meta/:type/:id.json)
     if (path.startsWith('/meta/')) {
       const parts = path.replace('.json', '').split('/');
       const type = parts[2];
       const slug = parts[3];
 
       try {
-        const res = await fetch(`${API_BASE}/phim/${slug}`);
+        const res = await fetch(`${API_BASE}/phim/${slug}`, { headers: FETCH_HEADERS });
         const data = await res.json();
         const movie = data.movie;
 
@@ -872,34 +857,19 @@ export default {
           releaseInfo: `${movie.year}`,
         };
 
-        if (movie.episodes && movie.episodes.length > 0) {
-          const videos = [];
-          movie.episodes.forEach((epGroup) => {
-            (epGroup.server_data || []).forEach((ep) => {
-              videos.push({
-                id: `${movie.slug}:${ep.slug}`,
-                title: ep.name,
-                released: new Date().toISOString(),
-              });
-            });
-          });
-          meta.videos = videos;
-        }
-
         return new Response(JSON.stringify({ meta }), { headers: corsHeaders });
       } catch (err) {
         return new Response(JSON.stringify({ meta: null }), { headers: corsHeaders });
       }
     }
 
-    // 6. Stream Endpoint (/stream/:type/:id.json)
     if (path.startsWith('/stream/')) {
       const parts = path.replace('.json', '').split('/');
       const idStr = parts[3];
       const slug = idStr.split(':')[0];
 
       try {
-        const res = await fetch(`${API_BASE}/phim/${slug}`);
+        const res = await fetch(`${API_BASE}/phim/${slug}`, { headers: FETCH_HEADERS });
         const data = await res.json();
         const movie = data.movie;
 
@@ -911,12 +881,12 @@ export default {
 
         const streams = [
           {
-            name: 'KFilms Pro',
-            title: `Thêm & Mở trên KFilms App\n${movieTitle}`,
+            name: 'FILMS ADDON',
+            title: `Mở Trong KFilms App\n(Yêu cầu KFILMS Pro)\n${movieTitle}`,
             externalUrl: kfilmsDeepLink,
           },
           {
-            name: 'KFilms Direct',
+            name: 'Direct Stream',
             title: `Xem Trực Tiếp\n${movieTitle}`,
             url: playUrl,
           },
@@ -928,6 +898,6 @@ export default {
       }
     }
 
-    return new Response('KFilms Portal Active', { status: 200, headers: corsHeaders });
+    return new Response('FILMS ADDON Active', { status: 200, headers: corsHeaders });
   },
 };
