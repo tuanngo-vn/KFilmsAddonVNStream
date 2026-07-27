@@ -818,8 +818,8 @@ function getHtmlPage(domain) {
     function openInKFilms() {
       if (!currentMovie) return;
       const domainHost = window.location.hostname;
-      const playUrl = 'https://' + domainHost + '/play/' + currentMovie.id;
-      const kfilmsUrl = 'kfilms://' + playUrl + '?kfname=' + encodeURIComponent(currentMovie.name);
+      const episodesUrl = 'https://' + domainHost + '/episodes/' + currentMovie.id + '.json';
+      const kfilmsUrl = 'kfilms://' + episodesUrl + '?kfname=' + encodeURIComponent(currentMovie.name) + '&kftype=group';
 
       window.location.href = kfilmsUrl;
       showToast('Đang kích hoạt KFilms Pro...');
@@ -862,6 +862,51 @@ export default {
 
     if (path === '/manifest.json' || path === '/guest/manifest.json') {
       return new Response(JSON.stringify(manifest), { headers: corsHeaders });
+    }
+
+    // Endpoint /episodes/:slug.json (Trả về thông tin chi tiết và danh sách các tập phim cho KFilms App)
+    if (path.startsWith('/episodes/')) {
+      const slug = path.replace('/episodes/', '').replace('.json', '');
+
+      if (!slug) {
+        return new Response(JSON.stringify({ error: 'Missing movie slug' }), { status: 400, headers: corsHeaders });
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/phim/${slug}`, { headers: FETCH_HEADERS });
+        if (!res.ok) {
+          return new Response(JSON.stringify({ error: 'Movie not found' }), { status: 404, headers: corsHeaders });
+        }
+
+        const data = await res.json();
+        const movie = data.movie || {};
+        const episodeGroups = data.episodes || [];
+
+        const formattedEpisodes = [];
+        episodeGroups.forEach(group => {
+          (group.server_data || []).forEach(ep => {
+            formattedEpisodes.push({
+              name: ep.name,
+              slug: ep.slug,
+              filename: ep.filename,
+              link_m3u8: ep.link_m3u8,
+              link_embed: ep.link_embed,
+              server_name: group.server_name
+            });
+          });
+        });
+
+        return new Response(JSON.stringify({
+          title: movie.name || slug,
+          origin_name: movie.origin_name || '',
+          slug: movie.slug || slug,
+          poster: formatImageUrl(movie.poster_url || movie.thumb_url),
+          banner: formatImageUrl(movie.thumb_url || movie.poster_url),
+          episodes: formattedEpisodes
+        }), { headers: corsHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
+      }
     }
 
     if (path.startsWith('/play/') || path === '/play') {
@@ -1006,7 +1051,8 @@ export default {
         const movieTitle = movie ? movie.name : slug;
         const domain = url.hostname;
         
-        const kfilmsDeepLink = `kfilms://${domain}/play/${slug}?kfname=${encodeURIComponent(movieTitle)}`;
+        const episodesUrl = `https://${domain}/episodes/${slug}.json`;
+        const kfilmsDeepLink = `kfilms://${episodesUrl}?kfname=${encodeURIComponent(movieTitle)}&kftype=group`;
 
         const streams = [
           {
