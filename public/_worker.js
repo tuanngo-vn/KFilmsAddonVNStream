@@ -680,7 +680,7 @@ function getHtmlPage(domain) {
         <div class="action-buttons">
           <button id="btnKFilms" class="btn-primary-kfilms" onclick="openInKFilms()">
             <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            ▶ Mở với KFilms Pro
+            Mở với KFilms Pro
           </button>
 
           <div class="player-support-note">
