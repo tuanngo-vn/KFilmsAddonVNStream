@@ -22,43 +22,6 @@ const manifest = {
       "name": "[VNStream] Mới cập nhật",
       "id": "vnstream-top",
       "extra": [
-        { "name": "skip", "value": "24" },
-        {
-          "name": "genre",
-          "optionsLimit": 16,
-          "isRequired": false,
-          "options": [
-            "Hành Động", "Cổ Trang", "Chiến Tranh", "Viễn Tưởng", "Kinh Dị", "Tài Liệu",
-            "Bí Ẩn", "Tình Cảm", "Tâm Lý", "Thể Thao", "Phiêu Lưu", "Âm Nhạc", "Gia Đình",
-            "Học Đường", "Hài Hước", "Hình Sự", "Võ Thuật", "Khoa Học", "Thần Thoại", "Chính Kịch", "Kinh Điển"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "movie",
-      "name": "[VNStream] Phụ đề",
-      "id": "vnstream-vietsub",
-      "extra": [
-        { "name": "skip", "value": "24" },
-        { "name": "search" },
-        {
-          "name": "genre",
-          "optionsLimit": 16,
-          "isRequired": false,
-          "options": [
-            "Hành Động", "Cổ Trang", "Chiến Tranh", "Viễn Tưởng", "Kinh Dị", "Tài Liệu",
-            "Bí Ẩn", "Tình Cảm", "Tâm Lý", "Thể Thao", "Phiêu Lưu", "Âm Nhạc", "Gia Đình",
-            "Học Đường", "Hài Hước", "Hình Sự", "Võ Thuật", "Khoa Học", "Thần Thoại", "Chính Kịch", "Kinh Điển"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "series",
-      "name": "[VNStream] Mới cập nhật",
-      "id": "vnstream-top",
-      "extra": [
         { "name": "skip", "value": "24" }
       ]
     }
@@ -73,10 +36,689 @@ const manifest = {
     "series"
   ],
   "name": "VNStream",
-  "description": "Xem phim hay Vietsub, thuyết minh, lồng tiếng tổng hợp từ nhiều nguồn miễn phí | Popular Vietsub Movies and TV shows",
+  "description": "Xem phim hay Vietsub, thuyết minh, lồng tiếng tổng hợp từ nhiều nguồn miễn phí",
   "logo": "https://films-addon.pages.dev/static/logo@256.png",
   "background": "https://films-addon.pages.dev/static/background.png"
 };
+
+function getHtmlPage(domain) {
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KFilms Stream Portal | Thư Viện Phim Hay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #07090e;
+      --bg-secondary: #0f1420;
+      --bg-card: #151c2d;
+      --bg-glass: rgba(21, 28, 45, 0.75);
+      --border-glass: rgba(255, 255, 255, 0.08);
+      --accent-grad: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+      --accent-glow: rgba(168, 85, 247, 0.35);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(236, 72, 153, 0.12) 0%, transparent 40%);
+    }
+
+    h1, h2, h3, h4, .brand-logo {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* Header Navbar */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 9, 14, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-glass);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-grad);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: white;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .brand-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      background: var(--accent-grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1;
+      max-width: 480px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      padding: 0.75rem 1.25rem 0.75rem 2.8rem;
+      border-radius: 99px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+      border-color: #a855f7;
+      box-shadow: 0 0 15px rgba(168, 85, 247, 0.25);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* Container */
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .hero-banner {
+      background: linear-gradient(180deg, rgba(15, 20, 32, 0.4) 0%, var(--bg-card) 100%),
+                  radial-gradient(circle at top right, rgba(168, 85, 247, 0.2), transparent);
+      border: 1px solid var(--border-glass);
+      border-radius: 24px;
+      padding: 2.5rem;
+      margin-bottom: 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero-text h2 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 0.75rem;
+      line-height: 1.2;
+    }
+
+    .hero-text p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    .badge-app {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      color: #c084fc;
+      padding: 0.4rem 0.9rem;
+      border-radius: 99px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    /* Movie Grid */
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: var(--accent-grad);
+      border-radius: 4px;
+    }
+
+    .movie-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .movie-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .movie-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: rgba(168, 85, 247, 0.5);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(168, 85, 247, 0.2);
+    }
+
+    .poster-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 2/3;
+      background: var(--bg-secondary);
+      overflow: hidden;
+    }
+
+    .poster-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .movie-card:hover .poster-img {
+      transform: scale(1.08);
+    }
+
+    .play-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(7, 9, 14, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .movie-card:hover .play-overlay {
+      opacity: 1;
+    }
+
+    .btn-play-icon {
+      width: 54px;
+      height: 54px;
+      background: var(--accent-grad);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .movie-info {
+      padding: 1rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .movie-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.4rem;
+    }
+
+    .movie-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(7, 9, 14, 0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 28px;
+      max-width: 680px;
+      width: 100%;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      position: relative;
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-backdrop.active .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-header-bg {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      background: var(--bg-secondary);
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 36px;
+      height: 36px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+      font-size: 1.2rem;
+    }
+
+    .modal-body {
+      padding: 1.75rem;
+      margin-top: -60px;
+      position: relative;
+    }
+
+    .modal-movie-header {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-end;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-poster {
+      width: 110px;
+      height: 165px;
+      object-fit: cover;
+      border-radius: 16px;
+      border: 3px solid var(--bg-card);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      flex-shrink: 0;
+    }
+
+    .modal-title-area h3 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 0.3rem;
+    }
+
+    .modal-subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .modal-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+
+    .btn-primary-kfilms {
+      width: 100%;
+      background: var(--accent-grad);
+      border: none;
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 16px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      box-shadow: 0 8px 25px var(--accent-glow);
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary-kfilms:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(168, 85, 247, 0.5);
+    }
+
+    .btn-secondary {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-glass);
+      color: var(--text-main);
+      padding: 0.85rem 1.5rem;
+      border-radius: 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #10b981;
+      color: white;
+      padding: 0.9rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      z-index: 2000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .loading-spinner {
+      text-align: center;
+      padding: 4rem;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    @media (max-width: 640px) {
+      header {
+        padding: 1rem;
+        flex-direction: column;
+      }
+      .search-box {
+        width: 100%;
+      }
+      .hero-banner {
+        padding: 1.5rem;
+        flex-direction: column;
+      }
+      .movie-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="#" class="brand">
+      <div class="brand-icon">K</div>
+      <span class="brand-title">KFilms Stream</span>
+    </a>
+    <div class="search-box">
+      <svg class="search-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      <input type="text" id="searchInput" class="search-input" placeholder="Tìm kiếm phim hay...">
+    </div>
+  </header>
+
+  <main>
+    <div class="hero-banner">
+      <div class="hero-text">
+        <div class="badge-app">🚀 KFilms App Integration</div>
+        <h2>Xem Phim Chất Lượng Cao Trên KFilms</h2>
+        <p>Chọn bất kỳ bộ phim nào bên dưới, nhấn <b>"Mở Trong KFilms App"</b> để tự động thêm phim vào Mediabox và thưởng thức ngay!</p>
+      </div>
+    </div>
+
+    <div class="section-title">Danh Sách Phim Mới Cập Nhật</div>
+    <div id="movieGrid" class="movie-grid">
+      <div class="loading-spinner">Đang tải danh sách phim...</div>
+    </div>
+  </main>
+
+  <!-- Modal Detail -->
+  <div id="movieModal" class="modal-backdrop">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <img id="modalBg" class="modal-header-bg" src="" alt="Backdrop">
+      <div class="modal-body">
+        <div class="modal-movie-header">
+          <img id="modalPoster" class="modal-poster" src="" alt="Poster">
+          <div class="modal-title-area">
+            <h3 id="modalTitle">Tên Phim</h3>
+            <div id="modalSub" class="modal-subtitle">Tên gốc (Năm)</div>
+          </div>
+        </div>
+
+        <p id="modalDesc" class="modal-desc">Đang tải nội dung...</p>
+
+        <div class="action-buttons">
+          <button id="btnKFilms" class="btn-primary-kfilms" onclick="openInKFilms()">
+            <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            ▶ MỞ TRONG KFILMS APP
+          </button>
+          
+          <button class="btn-secondary" onclick="copyKFilmsLink()">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Sao Chép Link KFilms (kfilms://)
+          </button>
+
+          <a id="btnDirect" class="btn-secondary" href="#" target="_blank">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            Xem Trực Tiếp Trên Web / Player
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Đã sao chép link kfilms:// thành công!</div>
+
+  <script>
+    let currentMovie = null;
+    const DOMAIN = "${domain}";
+
+    // Fetch initial movies
+    async function loadMovies(search = '') {
+      const grid = document.getElementById('movieGrid');
+      grid.innerHTML = '<div class="loading-spinner">Đang tải danh sách phim...</div>';
+      
+      try {
+        let url = '/catalog/movie/vnstream-top.json';
+        if (search) {
+          url = '/catalog/movie/vnstream-vietsub/search=' + encodeURIComponent(search) + '.json';
+        }
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (!data.metas || data.metas.length === 0) {
+          grid.innerHTML = '<div class="loading-spinner">Không tìm thấy phim nào.</div>';
+          return;
+        }
+
+        grid.innerHTML = data.metas.map(movie => \`
+          <div class="movie-card" onclick="openMovieDetail('\${movie.id}')">
+            <div class="poster-wrapper">
+              <img class="poster-img" src="\${movie.poster}" alt="\${movie.name}" loading="lazy">
+              <div class="play-overlay">
+                <div class="btn-play-icon">
+                  <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+              </div>
+            </div>
+            <div class="movie-info">
+              <div class="movie-title">\${movie.name}</div>
+              <div class="movie-meta">\${movie.description || 'Vietsub'}</div>
+            </div>
+          </div>
+        \`).join('');
+      } catch (err) {
+        grid.innerHTML = '<div class="loading-spinner">Lỗi khi tải dữ liệu phim.</div>';
+      }
+    }
+
+    // Search event
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        loadMovies(e.target.value.trim());
+      }, 500);
+    });
+
+    // Open detail modal
+    async function openMovieDetail(id) {
+      const modal = document.getElementById('movieModal');
+      modal.classList.add('active');
+
+      document.getElementById('modalTitle').innerText = 'Đang tải...';
+      document.getElementById('modalSub').innerText = '';
+      document.getElementById('modalDesc').innerText = 'Đang lấy thông tin...';
+
+      try {
+        const res = await fetch('/meta/movie/' + id + '.json');
+        const data = await res.json();
+        const movie = data.meta;
+        currentMovie = movie;
+
+        document.getElementById('modalTitle').innerText = movie.name;
+        document.getElementById('modalSub').innerText = (movie.genres ? movie.genres.join(', ') : '') + ' • ' + (movie.releaseInfo || '');
+        document.getElementById('modalDesc').innerText = movie.description || 'Chưa có mô tả chi tiết cho phim này.';
+        document.getElementById('modalPoster').src = movie.poster;
+        document.getElementById('modalBg').src = movie.background || movie.poster;
+
+        const directPlayUrl = 'https://' + window.location.hostname + '/play/' + movie.id;
+        document.getElementById('btnDirect').href = directPlayUrl;
+      } catch (err) {
+        document.getElementById('modalTitle').innerText = 'Lỗi thông tin';
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('movieModal').classList.remove('active');
+    }
+
+    // Open in KFilms App via Deep Link
+    function openInKFilms() {
+      if (!currentMovie) return;
+      const domainHost = window.location.hostname;
+      const playUrl = 'https://' + domainHost + '/play/' + currentMovie.id;
+      const kfilmsUrl = 'kfilms://' + playUrl + '?kfname=' + encodeURIComponent(currentMovie.name);
+
+      // Trigger custom scheme link to open KFilms App
+      window.location.href = kfilmsUrl;
+      
+      showToast('Đang kích hoạt ứng dụng KFilms...');
+    }
+
+    function copyKFilmsLink() {
+      if (!currentMovie) return;
+      const domainHost = window.location.hostname;
+      const playUrl = 'https://' + domainHost + '/play/' + currentMovie.id;
+      const kfilmsUrl = 'kfilms://' + playUrl + '?kfname=' + encodeURIComponent(currentMovie.name);
+
+      navigator.clipboard.writeText(kfilmsUrl);
+      showToast('Đã copy link: ' + kfilmsUrl);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Load initial movies on start
+    loadMovies();
+  </script>
+</body>
+</html>`;
+}
 
 export default {
   async fetch(request, env, ctx) {
@@ -94,12 +736,19 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // 1. Manifest Endpoint
+    // 1. Web Page Homepage (When user opens https://films-addon.pages.dev in browser)
+    if (path === '/' || path === '/index.html') {
+      return new Response(getHtmlPage(url.hostname), {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+      });
+    }
+
+    // 2. Manifest Endpoint
     if (path === '/manifest.json' || path === '/guest/manifest.json') {
       return new Response(JSON.stringify(manifest), { headers: corsHeaders });
     }
 
-    // 2. Resolve Link & Redirect 302 to real m3u8 stream link
+    // 3. Resolve Link & Redirect 302 to real m3u8 stream link
     // Route: /play/:id or /play?id=:id
     if (path.startsWith('/play/') || path === '/play') {
       let slug = path.replace('/play/', '').replace('/play', '');
@@ -138,7 +787,7 @@ export default {
       }
     }
 
-    // 3. Catalog Endpoint (/catalog/:type/:id.json or /catalog/:type/:id/:extra.json)
+    // 4. Catalog Endpoint (/catalog/:type/:id.json or /catalog/:type/:id/:extra.json)
     if (path.startsWith('/catalog/')) {
       const parts = path.replace('.json', '').split('/');
       const type = parts[2];
@@ -191,7 +840,7 @@ export default {
       }
     }
 
-    // 4. Meta Endpoint (/meta/:type/:id.json)
+    // 5. Meta Endpoint (/meta/:type/:id.json)
     if (path.startsWith('/meta/')) {
       const parts = path.replace('.json', '').split('/');
       const type = parts[2];
@@ -243,7 +892,7 @@ export default {
       }
     }
 
-    // 5. Stream Endpoint (/stream/:type/:id.json)
+    // 6. Stream Endpoint (/stream/:type/:id.json)
     if (path.startsWith('/stream/')) {
       const parts = path.replace('.json', '').split('/');
       const idStr = parts[3];
@@ -255,11 +904,8 @@ export default {
         const movie = data.movie;
 
         const movieTitle = movie ? movie.name : slug;
-
-        // Dynamic domain (e.g. films-addon.pages.dev or films-addon.kollersi.workers.dev)
         const domain = url.hostname;
         
-        // Deep Link Scheme requirement: kfilms://{domain}/play/:id?kfname=...
         const playUrl = `https://${domain}/play/${slug}`;
         const kfilmsDeepLink = `kfilms://${domain}/play/${slug}?kfname=${encodeURIComponent(movieTitle)}`;
 
@@ -271,7 +917,7 @@ export default {
           },
           {
             name: 'KFilms Direct',
-            title: `Xem Trực Tiếp (VLC / PotPlayer / Stremio)\n${movieTitle}`,
+            title: `Xem Trực Tiếp\n${movieTitle}`,
             url: playUrl,
           },
         ];
@@ -282,6 +928,6 @@ export default {
       }
     }
 
-    return new Response('KFilms VNStream Addon Active', { status: 200, headers: corsHeaders });
+    return new Response('KFilms Portal Active', { status: 200, headers: corsHeaders });
   },
 };
