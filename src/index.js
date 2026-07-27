@@ -7,7 +7,7 @@ const FETCH_HEADERS = {
 
 const manifest = {
   "id": "community.VNStream",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "behaviorHints": {
     "configurable": false,
     "configurationRequired": false
@@ -26,9 +26,31 @@ const manifest = {
       "type": "movie",
       "name": "[FILMS ADDON] Mới cập nhật",
       "id": "vnstream-top",
-      "extra": [
-        { "name": "skip", "value": "24" }
-      ]
+      "extra": [{ "name": "skip", "value": "24" }, { "name": "search" }]
+    },
+    {
+      "type": "movie",
+      "name": "[FILMS ADDON] Phim Lẻ",
+      "id": "vnstream-single",
+      "extra": [{ "name": "skip", "value": "24" }, { "name": "search" }]
+    },
+    {
+      "type": "series",
+      "name": "[FILMS ADDON] Phim Bộ",
+      "id": "vnstream-series",
+      "extra": [{ "name": "skip", "value": "24" }, { "name": "search" }]
+    },
+    {
+      "type": "series",
+      "name": "[FILMS ADDON] Hoạt Hình",
+      "id": "vnstream-anime",
+      "extra": [{ "name": "skip", "value": "24" }, { "name": "search" }]
+    },
+    {
+      "type": "series",
+      "name": "[FILMS ADDON] TV Shows",
+      "id": "vnstream-tvshows",
+      "extra": [{ "name": "skip", "value": "24" }, { "name": "search" }]
     }
   ],
   "resources": [
@@ -214,6 +236,44 @@ function getHtmlPage(domain) {
       margin-bottom: 1rem;
     }
 
+    .tabs-container {
+      display: flex;
+      gap: 0.75rem;
+      overflow-x: auto;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.5rem;
+      scrollbar-width: none;
+    }
+
+    .tabs-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      color: var(--text-muted);
+      padding: 0.65rem 1.25rem;
+      border-radius: 99px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-grad);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
     .section-title {
       font-size: 1.5rem;
       font-weight: 700;
@@ -326,6 +386,32 @@ function getHtmlPage(domain) {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+
+    .load-more-container {
+      text-align: center;
+      margin-top: 3rem;
+      margin-bottom: 2rem;
+    }
+
+    .btn-load-more {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      color: var(--text-main);
+      padding: 0.9rem 2.5rem;
+      border-radius: 99px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-load-more:hover {
+      background: var(--accent-grad);
+      border-color: transparent;
+      box-shadow: 0 8px 25px var(--accent-glow);
+      transform: translateY(-2px);
     }
 
     .modal-backdrop {
@@ -512,6 +598,7 @@ function getHtmlPage(domain) {
       padding: 4rem;
       color: var(--text-muted);
       font-size: 1.1rem;
+      grid-column: 1 / -1;
     }
 
     @media (max-width: 640px) {
@@ -555,9 +642,23 @@ function getHtmlPage(domain) {
       </div>
     </div>
 
-    <div class="section-title">Danh Sách Phim Mới Cập Nhật</div>
+    <!-- Category Tabs -->
+    <div class="tabs-container">
+      <button class="tab-btn active" onclick="switchCategory('vnstream-top', this)">🔥 Mới Cập Nhật</button>
+      <button class="tab-btn" onclick="switchCategory('vnstream-single', this)">🎬 Phim Lẻ</button>
+      <button class="tab-btn" onclick="switchCategory('vnstream-series', this)">📺 Phim Bộ</button>
+      <button class="tab-btn" onclick="switchCategory('vnstream-anime', this)">🎨 Hoạt Hình</button>
+      <button class="tab-btn" onclick="switchCategory('vnstream-tvshows', this)">⭐ TV Shows</button>
+    </div>
+
+    <div class="section-title" id="sectionTitle">Danh Sách Phim Mới Cập Nhật</div>
+    
     <div id="movieGrid" class="movie-grid">
       <div class="loading-spinner">Đang tải danh sách phim...</div>
+    </div>
+
+    <div class="load-more-container">
+      <button id="btnLoadMore" class="btn-load-more" onclick="loadNextPage()">Tải Thêm Phim 🔽</button>
     </div>
   </main>
 
@@ -600,26 +701,49 @@ function getHtmlPage(domain) {
 
   <script>
     let currentMovie = null;
+    let currentCatalog = 'vnstream-top';
+    let currentPage = 1;
+    let currentSearch = '';
+    let isLoading = false;
+    let allMovies = [];
 
-    async function loadMovies(search = '') {
+    async function loadMovies(reset = true) {
+      if (isLoading) return;
+      isLoading = true;
+
       const grid = document.getElementById('movieGrid');
-      grid.innerHTML = '<div class="loading-spinner">Đang tải danh sách phim...</div>';
-      
+      const btnLoadMore = document.getElementById('btnLoadMore');
+
+      if (reset) {
+        currentPage = 1;
+        allMovies = [];
+        grid.innerHTML = '<div class="loading-spinner">Đang tải danh sách phim...</div>';
+      }
+
+      btnLoadMore.innerText = 'Đang tải...';
+
       try {
-        let url = '/catalog/movie/vnstream-top.json';
-        if (search) {
-          url = '/catalog/movie/vnstream-vietsub/search=' + encodeURIComponent(search) + '.json';
+        let skip = (currentPage - 1) * 24;
+        let url = '/catalog/movie/' + currentCatalog + '/skip=' + skip + '.json';
+        if (currentSearch) {
+          url = '/catalog/movie/' + currentCatalog + '/search=' + encodeURIComponent(currentSearch) + '.json';
         }
         
         const res = await fetch(url);
         const data = await res.json();
         
-        if (!data.metas || data.metas.length === 0) {
+        const newMovies = data.metas || [];
+
+        if (reset && newMovies.length === 0) {
           grid.innerHTML = '<div class="loading-spinner">Không tìm thấy phim nào.</div>';
+          btnLoadMore.style.display = 'none';
+          isLoading = false;
           return;
         }
 
-        grid.innerHTML = data.metas.map(movie => \`
+        allMovies = reset ? newMovies : [...allMovies, ...newMovies];
+
+        grid.innerHTML = allMovies.map(movie => \`
           <div class="movie-card" onclick="openMovieDetail('\${movie.id}')">
             <div class="poster-wrapper">
               <img class="poster-img" src="\${movie.poster}" alt="\${movie.name}" loading="lazy">
@@ -635,16 +759,37 @@ function getHtmlPage(domain) {
             </div>
           </div>
         \`).join('');
+
+        btnLoadMore.style.display = newMovies.length < 24 ? 'none' : 'inline-block';
+        btnLoadMore.innerText = 'Tải Thêm Phim 🔽 (Đã hiển thị ' + allMovies.length + ' phim)';
       } catch (err) {
-        grid.innerHTML = '<div class="loading-spinner">Lỗi khi tải dữ liệu phim.</div>';
+        if (reset) grid.innerHTML = '<div class="loading-spinner">Lỗi khi tải dữ liệu phim.</div>';
+      } finally {
+        isLoading = false;
       }
+    }
+
+    function loadNextPage() {
+      currentPage++;
+      loadMovies(false);
+    }
+
+    function switchCategory(catalogId, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentCatalog = catalogId;
+      currentSearch = '';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('sectionTitle').innerText = btn.innerText.replace(/[^\w\s\u00C0-\u1EF9]/gi, '').trim();
+      loadMovies(true);
     }
 
     let searchTimeout;
     document.getElementById('searchInput').addEventListener('input', (e) => {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
-        loadMovies(e.target.value.trim());
+        currentSearch = e.target.value.trim();
+        loadMovies(true);
       }, 500);
     });
 
@@ -706,7 +851,7 @@ function getHtmlPage(domain) {
       setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    loadMovies();
+    loadMovies(true);
   </script>
 </body>
 </html>`;
@@ -774,6 +919,7 @@ export default {
       }
     }
 
+    // Catalog Endpoint (Supports vnstream-top, vnstream-single, vnstream-series, vnstream-anime, vnstream-tvshows)
     if (path.startsWith('/catalog/')) {
       const parts = path.replace('.json', '').split('/');
       const type = parts[2];
@@ -792,8 +938,17 @@ export default {
 
       try {
         let fetchUrl = `${API_BASE}/danh-sach/phim-moi-cap-nhat?page=${page}`;
+        
         if (searchQuery) {
           fetchUrl = `${API_BASE}/v1/api/tim-kiem?keyword=${encodeURIComponent(searchQuery)}&page=${page}`;
+        } else if (catalogId === 'vnstream-single') {
+          fetchUrl = `${API_BASE}/v1/api/danh-sach/phim-le?page=${page}`;
+        } else if (catalogId === 'vnstream-series') {
+          fetchUrl = `${API_BASE}/v1/api/danh-sach/phim-bo?page=${page}`;
+        } else if (catalogId === 'vnstream-anime') {
+          fetchUrl = `${API_BASE}/v1/api/danh-sach/hoat-hinh?page=${page}`;
+        } else if (catalogId === 'vnstream-tvshows') {
+          fetchUrl = `${API_BASE}/v1/api/danh-sach/tv-shows?page=${page}`;
         }
 
         const res = await fetch(fetchUrl, { headers: FETCH_HEADERS });
@@ -816,7 +971,7 @@ export default {
             type: item.type === 'single' ? 'movie' : 'series',
             name: item.name,
             poster: posterUrl,
-            description: `${item.origin_name} (${item.year || ''})`,
+            description: `${item.origin_name || ''} (${item.year || ''})`,
           };
         });
 
