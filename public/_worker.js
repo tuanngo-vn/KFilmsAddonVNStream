@@ -550,26 +550,16 @@ function getHtmlPage(domain) {
       box-shadow: 0 12px 30px rgba(168, 85, 247, 0.5);
     }
 
-    .btn-secondary {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-glass);
-      color: var(--text-main);
-      padding: 0.85rem 1.5rem;
-      border-radius: 16px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.6rem;
-      transition: all 0.3s ease;
-      text-decoration: none;
-    }
-
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
+    .player-support-note {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-top: 0.4rem;
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed var(--border-glass);
+      border-radius: 12px;
+      line-height: 1.4;
     }
 
     .toast {
@@ -638,7 +628,7 @@ function getHtmlPage(domain) {
       <div class="hero-text">
         <div class="badge-app">⚠️ Yêu cầu KFILMS Pro</div>
         <h2>FILMS ADDON</h2>
-        <p>Chọn bất kỳ bộ phim nào bên dưới, nhấn <b>"Mở Trong KFilms App"</b> để tự động thêm phim vào Mediabox và thưởng thức ngay!</p>
+        <p>Chọn bất kỳ bộ phim nào bên dưới, nhấn <b>"Mở trong KFilms Pro"</b> để tự động thêm phim vào Mediabox và thưởng thức ngay!</p>
       </div>
     </div>
 
@@ -680,24 +670,18 @@ function getHtmlPage(domain) {
         <div class="action-buttons">
           <button id="btnKFilms" class="btn-primary-kfilms" onclick="openInKFilms()">
             <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            ▶ Mở Trong KFilms App
-          </button>
-          
-          <button class="btn-secondary" onclick="copyKFilmsLink()">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-            Sao Chép Link KFilms (kfilms://)
+            ▶ Mở với KFilms Pro
           </button>
 
-          <a id="btnDirect" class="btn-secondary" href="#" target="_blank">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-            Xem Trực Tiếp Trên Web / Player
-          </a>
+          <div class="player-support-note">
+            💡 Sẽ sớm support thêm các player khác: VLC, IINA, PotPlayer, Stremio
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="toast" class="toast">Đã sao chép link kfilms:// thành công!</div>
+  <div id="toast" class="toast">Đang chuyển hướng sang KFilms Pro...</div>
 
   <script>
     let currentMovie = null;
@@ -812,9 +796,6 @@ function getHtmlPage(domain) {
         document.getElementById('modalDesc').innerText = movie.description || 'Chưa có mô tả chi tiết cho phim này.';
         document.getElementById('modalPoster').src = movie.poster;
         document.getElementById('modalBg').src = movie.background || movie.poster;
-
-        const directPlayUrl = 'https://' + window.location.hostname + '/play/' + movie.id;
-        document.getElementById('btnDirect').href = directPlayUrl;
       } catch (err) {
         document.getElementById('modalTitle').innerText = 'Lỗi thông tin';
       }
@@ -831,17 +812,7 @@ function getHtmlPage(domain) {
       const kfilmsUrl = 'kfilms://' + playUrl + '?kfname=' + encodeURIComponent(currentMovie.name);
 
       window.location.href = kfilmsUrl;
-      showToast('Đang kích hoạt ứng dụng KFilms...');
-    }
-
-    function copyKFilmsLink() {
-      if (!currentMovie) return;
-      const domainHost = window.location.hostname;
-      const playUrl = 'https://' + domainHost + '/play/' + currentMovie.id;
-      const kfilmsUrl = 'kfilms://' + playUrl + '?kfname=' + encodeURIComponent(currentMovie.name);
-
-      navigator.clipboard.writeText(kfilmsUrl);
-      showToast('Đã copy link: ' + kfilmsUrl);
+      showToast('Đang kích hoạt KFilms Pro...');
     }
 
     function showToast(msg) {
@@ -919,7 +890,6 @@ export default {
       }
     }
 
-    // Catalog Endpoint (Supports vnstream-top, vnstream-single, vnstream-series, vnstream-anime, vnstream-tvshows)
     if (path.startsWith('/catalog/')) {
       const parts = path.replace('.json', '').split('/');
       const type = parts[2];
@@ -1031,20 +1001,14 @@ export default {
         const movieTitle = movie ? movie.name : slug;
         const domain = url.hostname;
         
-        const playUrl = `https://${domain}/play/${slug}`;
         const kfilmsDeepLink = `kfilms://${domain}/play/${slug}?kfname=${encodeURIComponent(movieTitle)}`;
 
         const streams = [
           {
-            name: 'FILMS ADDON',
-            title: `Mở Trong KFilms App\n(Yêu cầu KFILMS Pro)\n${movieTitle}`,
+            name: 'KFilms Pro',
+            title: `Mở với KFilms Pro\n(Sẽ sớm support thêm các player khác: VLC, IINA, PotPlayer, Stremio)\n${movieTitle}`,
             externalUrl: kfilmsDeepLink,
-          },
-          {
-            name: 'Direct Stream',
-            title: `Xem Trực Tiếp\n${movieTitle}`,
-            url: playUrl,
-          },
+          }
         ];
 
         return new Response(JSON.stringify({ streams }), { headers: corsHeaders });
