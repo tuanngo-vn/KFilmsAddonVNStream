@@ -1,69 +1,119 @@
-const API_PRIMARY = 'https://phimapi.com';
-const API_FALLBACK = 'https://ophim1.com';
-const IMG_BASE = 'https://phimimg.com';
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-const FETCH_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Accept': 'application/json'
+// .wrangler/tmp/bundle-EyHNY4/checked-fetch.js
+var urls = /* @__PURE__ */ new Set();
+function checkURL(request, init) {
+  const url = request instanceof URL ? request : new URL(
+    (typeof request === "string" ? new Request(request, init) : request).url
+  );
+  if (url.port && url.port !== "443" && url.protocol === "https:") {
+    if (!urls.has(url.toString())) {
+      urls.add(url.toString());
+      console.warn(
+        `WARNING: known issue with \`fetch()\` requests to custom HTTPS ports in published Workers:
+ - ${url.toString()} - the custom port will be ignored when the Worker is published using the \`wrangler deploy\` command.
+`
+      );
+    }
+  }
+}
+__name(checkURL, "checkURL");
+globalThis.fetch = new Proxy(globalThis.fetch, {
+  apply(target, thisArg, argArray) {
+    const [request, init] = argArray;
+    checkURL(request, init);
+    return Reflect.apply(target, thisArg, argArray);
+  }
+});
+
+// .wrangler/tmp/pages-yD1a94/bundledWorker-0.9717565187518361.mjs
+var __defProp2 = Object.defineProperty;
+var __name2 = /* @__PURE__ */ __name((target, value) => __defProp2(target, "name", { value, configurable: true }), "__name");
+var urls2 = /* @__PURE__ */ new Set();
+function checkURL2(request, init) {
+  const url = request instanceof URL ? request : new URL(
+    (typeof request === "string" ? new Request(request, init) : request).url
+  );
+  if (url.port && url.port !== "443" && url.protocol === "https:") {
+    if (!urls2.has(url.toString())) {
+      urls2.add(url.toString());
+      console.warn(
+        `WARNING: known issue with \`fetch()\` requests to custom HTTPS ports in published Workers:
+ - ${url.toString()} - the custom port will be ignored when the Worker is published using the \`wrangler deploy\` command.
+`
+      );
+    }
+  }
+}
+__name(checkURL2, "checkURL");
+__name2(checkURL2, "checkURL");
+globalThis.fetch = new Proxy(globalThis.fetch, {
+  apply(target, thisArg, argArray) {
+    const [request, init] = argArray;
+    checkURL2(request, init);
+    return Reflect.apply(target, thisArg, argArray);
+  }
+});
+var API_PRIMARY = "https://phimapi.com";
+var API_FALLBACK = "https://ophim1.com";
+var FETCH_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Accept": "application/json"
 };
-
 async function fetchJsonSingle(url, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       headers: FETCH_HEADERS,
-      signal: controller.signal,
+      signal: controller.signal
     });
     if (res.ok) {
       const data = await res.json();
-      if (data && data.status !== false && data.status !== 'error' && data.msg !== 'slug error' && data.msg !== 'hmmm!') {
+      if (data && data.status !== false && data.status !== "error" && data.msg !== "slug error" && data.msg !== "hmmm!") {
         return data;
       }
     }
   } catch (e) {
-    // Timeout or network error — fail fast
   } finally {
     clearTimeout(timer);
   }
   return null;
 }
-
-async function fetchWithFallback(path, { timeoutMs = 4000 } = {}) {
-  // Try primary API (phimapi.com) with 4s timeout
+__name(fetchJsonSingle, "fetchJsonSingle");
+__name2(fetchJsonSingle, "fetchJsonSingle");
+async function fetchWithFallback(path, { timeoutMs = 4e3 } = {}) {
   let data = await fetchJsonSingle(`${API_PRIMARY}${path}`, timeoutMs);
-  if (data) return { data, source: 'primary' };
-
-  // Fallback immediately to secondary API (ophim1.com) if primary fails or returns error JSON
+  if (data) return { data, source: "primary" };
   data = await fetchJsonSingle(`${API_FALLBACK}${path}`, timeoutMs);
-  if (data) return { data, source: 'fallback' };
-
+  if (data) return { data, source: "fallback" };
   return { data: null, source: null };
 }
-
-function formatImageUrl(imgPath, cdnDomain = 'https://phimimg.com') {
-  if (!imgPath) return '';
-  if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
+__name(fetchWithFallback, "fetchWithFallback");
+__name2(fetchWithFallback, "fetchWithFallback");
+function formatImageUrl(imgPath, cdnDomain = "https://phimimg.com") {
+  if (!imgPath) return "";
+  if (imgPath.startsWith("http://") || imgPath.startsWith("https://")) {
     return imgPath;
   }
-  const cleanPath = imgPath.replace(/^\/+/, '');
-  let base = cdnDomain.replace(/\/+$/, '');
-
-  if (base.includes('ophim')) {
-    if (!cleanPath.startsWith('uploads/')) {
-      base = 'https://img.ophim.live/uploads/movies';
+  const cleanPath = imgPath.replace(/^\/+/, "");
+  let base = cdnDomain.replace(/\/+$/, "");
+  if (base.includes("ophim")) {
+    if (!cleanPath.startsWith("uploads/")) {
+      base = "https://img.ophim.live/uploads/movies";
     } else {
-      base = 'https://img.ophim.live';
+      base = "https://img.ophim.live";
     }
   }
-
-  if (cleanPath.startsWith('uploads/') && base.endsWith('/uploads')) {
-    return `${base.replace(/\/uploads$/, '')}/${cleanPath}`;
+  if (cleanPath.startsWith("uploads/") && base.endsWith("/uploads")) {
+    return `${base.replace(/\/uploads$/, "")}/${cleanPath}`;
   }
   return `${base}/${cleanPath}`;
 }
-
-const manifest = {
+__name(formatImageUrl, "formatImageUrl");
+__name2(formatImageUrl, "formatImageUrl");
+var manifest = {
   "id": "community.VNStream",
   "version": "1.6.0",
   "behaviorHints": {
@@ -82,25 +132,25 @@ const manifest = {
   "catalogs": [
     {
       "type": "movie",
-      "name": "[FILMS ADDON] Mới cập nhật",
+      "name": "[FILMS ADDON] M\u1EDBi c\u1EADp nh\u1EADt",
       "id": "vnstream-top",
       "extra": [{ "name": "skip", "value": "24" }, { "name": "search" }]
     },
     {
       "type": "movie",
-      "name": "[FILMS ADDON] Phim Lẻ",
+      "name": "[FILMS ADDON] Phim L\u1EBB",
       "id": "vnstream-single",
       "extra": [{ "name": "skip", "value": "24" }, { "name": "search" }]
     },
     {
       "type": "series",
-      "name": "[FILMS ADDON] Phim Bộ",
+      "name": "[FILMS ADDON] Phim B\u1ED9",
       "id": "vnstream-series",
       "extra": [{ "name": "skip", "value": "24" }, { "name": "search" }]
     },
     {
       "type": "series",
-      "name": "[FILMS ADDON] Hoạt Hình",
+      "name": "[FILMS ADDON] Ho\u1EA1t H\xECnh",
       "id": "vnstream-anime",
       "extra": [{ "name": "skip", "value": "24" }, { "name": "search" }]
     },
@@ -121,18 +171,17 @@ const manifest = {
     "series"
   ],
   "name": "FILMS ADDON",
-  "description": "Xem phim hay Vietsub, thuyết minh, lồng tiếng tổng hợp từ nhiều nguồn miễn phí",
+  "description": "Xem phim hay Vietsub, thuy\u1EBFt minh, l\u1ED3ng ti\u1EBFng t\u1ED5ng h\u1EE3p t\u1EEB nhi\u1EC1u ngu\u1ED3n mi\u1EC5n ph\xED",
   "logo": "https://films-addon.pages.dev/static/logo@256.png",
   "background": "https://films-addon.pages.dev/static/background.png"
 };
-
 function getHtmlPage(domain) {
   return `<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FILMS ADDON | Thư Viện Phim Hay</title>
+  <title>FILMS ADDON | Th\u01B0 Vi\u1EC7n Phim Hay</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -677,69 +726,69 @@ function getHtmlPage(domain) {
     </a>
     <div class="search-box">
       <svg class="search-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-      <input type="text" id="searchInput" class="search-input" placeholder="Tìm kiếm phim hay...">
+      <input type="text" id="searchInput" class="search-input" placeholder="T\xECm ki\u1EBFm phim hay...">
     </div>
   </header>
 
   <main>
     <div class="hero-banner">
       <div class="hero-text">
-        <div class="badge-app">⚠️ Yêu cầu KFILMS Pro</div>
+        <div class="badge-app">\u26A0\uFE0F Y\xEAu c\u1EA7u KFILMS Pro</div>
         <h2>FILMS ADDON</h2>
-        <p>Chọn bất kỳ bộ phim nào bên dưới, nhấn <b>"Mở trong KFilms Pro"</b> để tự động thêm phim vào Mediabox và thưởng thức ngay!</p>
+        <p>Ch\u1ECDn b\u1EA5t k\u1EF3 b\u1ED9 phim n\xE0o b\xEAn d\u01B0\u1EDBi, nh\u1EA5n <b>"M\u1EDF trong KFilms Pro"</b> \u0111\u1EC3 t\u1EF1 \u0111\u1ED9ng th\xEAm phim v\xE0o Mediabox v\xE0 th\u01B0\u1EDFng th\u1EE9c ngay!</p>
       </div>
     </div>
 
     <!-- Category Tabs -->
     <div class="tabs-container">
-      <button class="tab-btn active" onclick="switchCategory('vnstream-top', this)">🔥 Mới Cập Nhật</button>
-      <button class="tab-btn" onclick="switchCategory('vnstream-single', this)">🎬 Phim Lẻ</button>
-      <button class="tab-btn" onclick="switchCategory('vnstream-series', this)">📺 Phim Bộ</button>
-      <button class="tab-btn" onclick="switchCategory('vnstream-anime', this)">🎨 Hoạt Hình</button>
-      <button class="tab-btn" onclick="switchCategory('vnstream-tvshows', this)">⭐ TV Shows</button>
+      <button class="tab-btn active" onclick="switchCategory('vnstream-top', this)">\u{1F525} M\u1EDBi C\u1EADp Nh\u1EADt</button>
+      <button class="tab-btn" onclick="switchCategory('vnstream-single', this)">\u{1F3AC} Phim L\u1EBB</button>
+      <button class="tab-btn" onclick="switchCategory('vnstream-series', this)">\u{1F4FA} Phim B\u1ED9</button>
+      <button class="tab-btn" onclick="switchCategory('vnstream-anime', this)">\u{1F3A8} Ho\u1EA1t H\xECnh</button>
+      <button class="tab-btn" onclick="switchCategory('vnstream-tvshows', this)">\u2B50 TV Shows</button>
     </div>
 
-    <div class="section-title" id="sectionTitle">Danh Sách Phim Mới Cập Nhật</div>
+    <div class="section-title" id="sectionTitle">Danh S\xE1ch Phim M\u1EDBi C\u1EADp Nh\u1EADt</div>
     
     <div id="movieGrid" class="movie-grid">
-      <div class="loading-spinner">Đang tải danh sách phim...</div>
+      <div class="loading-spinner">\u0110ang t\u1EA3i danh s\xE1ch phim...</div>
     </div>
 
     <div class="load-more-container">
-      <button id="btnLoadMore" class="btn-load-more" onclick="loadNextPage()">Tải Thêm Phim 🔽</button>
+      <button id="btnLoadMore" class="btn-load-more" onclick="loadNextPage()">T\u1EA3i Th\xEAm Phim \u{1F53D}</button>
     </div>
   </main>
 
   <div id="movieModal" class="modal-backdrop">
     <div class="modal-content">
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()">\u2715</button>
       <img id="modalBg" class="modal-header-bg" src="" alt="Backdrop">
       <div class="modal-body">
         <div class="modal-movie-header">
           <img id="modalPoster" class="modal-poster" src="" alt="Poster">
           <div class="modal-title-area">
-            <h3 id="modalTitle">Tên Phim</h3>
-            <div id="modalSub" class="modal-subtitle">Tên gốc (Năm)</div>
+            <h3 id="modalTitle">T\xEAn Phim</h3>
+            <div id="modalSub" class="modal-subtitle">T\xEAn g\u1ED1c (N\u0103m)</div>
           </div>
         </div>
 
-        <p id="modalDesc" class="modal-desc">Đang tải nội dung...</p>
+        <p id="modalDesc" class="modal-desc">\u0110ang t\u1EA3i n\u1ED9i dung...</p>
 
         <div class="action-buttons">
           <button id="btnKFilms" class="btn-primary-kfilms" onclick="openInKFilms()">
             <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            Mở với KFilms Pro
+            M\u1EDF v\u1EDBi KFilms Pro
           </button>
 
           <div class="player-support-note">
-            💡 Sẽ sớm support thêm các player khác: VLC, IINA, PotPlayer, Stremio
+            \u{1F4A1} S\u1EBD s\u1EDBm support th\xEAm c\xE1c player kh\xE1c: VLC, IINA, PotPlayer, Stremio
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="toast" class="toast">Đang chuyển hướng sang KFilms Pro...</div>
+  <div id="toast" class="toast">\u0110ang chuy\u1EC3n h\u01B0\u1EDBng sang KFilms Pro...</div>
 
   <script>
     let currentMovie = null;
@@ -759,10 +808,10 @@ function getHtmlPage(domain) {
       if (reset) {
         currentPage = 1;
         allMovies = [];
-        grid.innerHTML = '<div class="loading-spinner">Đang tải danh sách phim...</div>';
+        grid.innerHTML = '<div class="loading-spinner">\u0110ang t\u1EA3i danh s\xE1ch phim...</div>';
       }
 
-      btnLoadMore.innerText = 'Đang tải...';
+      btnLoadMore.innerText = '\u0110ang t\u1EA3i...';
 
       try {
         let skip = (currentPage - 1) * 24;
@@ -777,7 +826,7 @@ function getHtmlPage(domain) {
         const newMovies = data.metas || [];
 
         if (reset && newMovies.length === 0) {
-          grid.innerHTML = '<div class="loading-spinner">Không tìm thấy phim nào.</div>';
+          grid.innerHTML = '<div class="loading-spinner">Kh\xF4ng t\xECm th\u1EA5y phim n\xE0o.</div>';
           btnLoadMore.style.display = 'none';
           isLoading = false;
           return;
@@ -803,9 +852,9 @@ function getHtmlPage(domain) {
         \`).join('');
 
         btnLoadMore.style.display = newMovies.length < 24 ? 'none' : 'inline-block';
-        btnLoadMore.innerText = 'Tải Thêm Phim 🔽 (Đã hiển thị ' + allMovies.length + ' phim)';
+        btnLoadMore.innerText = 'T\u1EA3i Th\xEAm Phim \u{1F53D} (\u0110\xE3 hi\u1EC3n th\u1ECB ' + allMovies.length + ' phim)';
       } catch (err) {
-        if (reset) grid.innerHTML = '<div class="loading-spinner">Lỗi khi tải dữ liệu phim.</div>';
+        if (reset) grid.innerHTML = '<div class="loading-spinner">L\u1ED7i khi t\u1EA3i d\u1EEF li\u1EC7u phim.</div>';
       } finally {
         isLoading = false;
       }
@@ -817,11 +866,11 @@ function getHtmlPage(domain) {
     }
 
     const CATEGORY_NAMES = {
-      'vnstream-top': 'Danh Sách Phim Mới Cập Nhật',
-      'vnstream-single': 'Danh Sách Phim Lẻ',
-      'vnstream-series': 'Danh Sách Phim Bộ',
-      'vnstream-anime': 'Danh Sách Hoạt Hình',
-      'vnstream-tvshows': 'Danh Sách TV Shows'
+      'vnstream-top': 'Danh S\xE1ch Phim M\u1EDBi C\u1EADp Nh\u1EADt',
+      'vnstream-single': 'Danh S\xE1ch Phim L\u1EBB',
+      'vnstream-series': 'Danh S\xE1ch Phim B\u1ED9',
+      'vnstream-anime': 'Danh S\xE1ch Ho\u1EA1t H\xECnh',
+      'vnstream-tvshows': 'Danh S\xE1ch TV Shows'
     };
 
     function switchCategory(catalogId, btn) {
@@ -830,7 +879,7 @@ function getHtmlPage(domain) {
       currentCatalog = catalogId;
       currentSearch = '';
       document.getElementById('searchInput').value = '';
-      const cleanTitle = CATEGORY_NAMES[catalogId] || btn.innerText.replace(/\p{Extended_Pictographic}|\p{Emoji_Presentation}/gu, '').trim();
+      const cleanTitle = CATEGORY_NAMES[catalogId] || btn.innerText.replace(/p{Extended_Pictographic}|p{Emoji_Presentation}/gu, '').trim();
       document.getElementById('sectionTitle').innerText = cleanTitle;
       loadMovies(true);
     }
@@ -841,9 +890,9 @@ function getHtmlPage(domain) {
       searchTimeout = setTimeout(() => {
         currentSearch = e.target.value.trim();
         if (currentSearch) {
-          document.getElementById('sectionTitle').innerText = 'Kết quả tìm kiếm: "' + currentSearch + '"';
+          document.getElementById('sectionTitle').innerText = 'K\u1EBFt qu\u1EA3 t\xECm ki\u1EBFm: "' + currentSearch + '"';
         } else {
-          document.getElementById('sectionTitle').innerText = CATEGORY_NAMES[currentCatalog] || 'Danh Sách Phim';
+          document.getElementById('sectionTitle').innerText = CATEGORY_NAMES[currentCatalog] || 'Danh S\xE1ch Phim';
         }
         loadMovies(true);
       }, 500);
@@ -853,32 +902,32 @@ function getHtmlPage(domain) {
       const modal = document.getElementById('movieModal');
       modal.classList.add('active');
 
-      document.getElementById('modalTitle').innerText = 'Đang tải...';
+      document.getElementById('modalTitle').innerText = '\u0110ang t\u1EA3i...';
       document.getElementById('modalSub').innerText = '';
-      document.getElementById('modalDesc').innerText = 'Đang lấy thông tin...';
+      document.getElementById('modalDesc').innerText = '\u0110ang l\u1EA5y th\xF4ng tin...';
 
       try {
         const res = await fetch('/meta/movie/' + id + '.json');
         const data = await res.json();
         const movie = data.meta;
         // /meta/ returns {meta: null} (still HTTP 200) when the upstream
-        // phimapi.com lookup failed or timed out — reading movie.name below
+        // phimapi.com lookup failed or timed out \u2014 reading movie.name below
         // would throw, and the generic catch couldn't tell this apart from
-        // a real network error, leaving modalDesc stuck on "Đang lấy thông
-        // tin..." next to "Lỗi thông tin" forever.
+        // a real network error, leaving modalDesc stuck on "\u0110ang l\u1EA5y th\xF4ng
+        // tin..." next to "L\u1ED7i th\xF4ng tin" forever.
         if (!movie) throw new Error('meta_null');
         currentMovie = movie;
 
         document.getElementById('modalTitle').innerText = movie.name;
-        document.getElementById('modalSub').innerText = (movie.genres ? movie.genres.join(', ') : '') + ' • ' + (movie.releaseInfo || '');
-        document.getElementById('modalDesc').innerText = movie.description || 'Chưa có mô tả chi tiết cho phim này.';
+        document.getElementById('modalSub').innerText = (movie.genres ? movie.genres.join(', ') : '') + ' \u2022 ' + (movie.releaseInfo || '');
+        document.getElementById('modalDesc').innerText = movie.description || 'Ch\u01B0a c\xF3 m\xF4 t\u1EA3 chi ti\u1EBFt cho phim n\xE0y.';
         document.getElementById('modalPoster').src = movie.poster;
         document.getElementById('modalBg').src = movie.background || movie.poster;
       } catch (err) {
         currentMovie = null;
-        document.getElementById('modalTitle').innerText = 'Lỗi thông tin';
+        document.getElementById('modalTitle').innerText = 'L\u1ED7i th\xF4ng tin';
         document.getElementById('modalSub').innerText = '';
-        document.getElementById('modalDesc').innerText = 'Không lấy được thông tin phim (nguồn dữ liệu đang chậm), vui lòng đóng và thử lại sau.';
+        document.getElementById('modalDesc').innerText = 'Kh\xF4ng l\u1EA5y \u0111\u01B0\u1EE3c th\xF4ng tin phim (ngu\u1ED3n d\u1EEF li\u1EC7u \u0111ang ch\u1EADm), vui l\xF2ng \u0111\xF3ng v\xE0 th\u1EED l\u1EA1i sau.';
       }
     }
 
@@ -896,7 +945,7 @@ function getHtmlPage(domain) {
         // KFilms imports every episode as one group in a single shot.
         const episodesUrl = 'https://' + domainHost + '/episodes/' + currentMovie.id + '.json';
         window.location.href = 'kfilms://' + episodesUrl + '?' + kfname + '&kftype=group';
-        showToast('Đang kích hoạt KFilms Pro...');
+        showToast('\u0110ang k\xEDch ho\u1EA1t KFilms Pro...');
         return;
       }
 
@@ -910,9 +959,9 @@ function getHtmlPage(domain) {
         const rawUrl = data.episodes && data.episodes[0] && data.episodes[0].url;
         if (!rawUrl) throw new Error('no stream url');
         window.location.href = 'kfilms://' + rawUrl + '?' + kfname;
-        showToast('Đang kích hoạt KFilms Pro...');
+        showToast('\u0110ang k\xEDch ho\u1EA1t KFilms Pro...');
       } catch (err) {
-        showToast('Không lấy được link phát, thử lại sau.');
+        showToast('Kh\xF4ng l\u1EA5y \u0111\u01B0\u1EE3c link ph\xE1t, th\u1EED l\u1EA1i sau.');
       }
     }
 
@@ -924,63 +973,52 @@ function getHtmlPage(domain) {
     }
 
     loadMovies(true);
-  </script>
+  <\/script>
 </body>
 </html>`;
 }
-
-export default {
+__name(getHtmlPage, "getHtmlPage");
+__name2(getHtmlPage, "getHtmlPage");
+var worker_default = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
-
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, max-age=180, s-maxage=360, stale-while-revalidate=60',
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=180, s-maxage=360, stale-while-revalidate=60"
     };
-
-    if (request.method === 'OPTIONS') {
+    if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
     }
-
-    if (path === '/' || path === '/index.html') {
+    if (path === "/" || path === "/index.html") {
       return new Response(getHtmlPage(url.hostname), {
-        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+        headers: { "Content-Type": "text/html; charset=utf-8" }
       });
     }
-
-    if (path === '/manifest.json' || path === '/guest/manifest.json') {
+    if (path === "/manifest.json" || path === "/guest/manifest.json") {
       return new Response(JSON.stringify(manifest), { headers: corsHeaders });
     }
-
-    // Endpoint /episodes/:slug.json (Trả về thông tin chi tiết và danh sách các tập phim cho KFilms App)
-    if (path.startsWith('/episodes/')) {
-      const slug = path.replace('/episodes/', '').replace('.json', '');
-
+    if (path.startsWith("/episodes/")) {
+      const slug = path.replace("/episodes/", "").replace(".json", "");
       if (!slug) {
-        return new Response(JSON.stringify({ error: 'Missing movie slug' }), { status: 400, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Missing movie slug" }), { status: 400, headers: corsHeaders });
       }
-
       try {
         const { data, source } = await fetchWithFallback(`/phim/${slug}`);
         if (!data) {
-          return new Response(JSON.stringify({ error: 'Movie not found' }), { status: 404, headers: corsHeaders });
+          return new Response(JSON.stringify({ error: "Movie not found" }), { status: 404, headers: corsHeaders });
         }
-
         const movie = data.movie || {};
-        const cdnDomain = source === 'fallback' 
-          ? (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://img.ophim.live/uploads/movies')
-          : (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://phimimg.com');
-
+        const cdnDomain = source === "fallback" ? data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || "https://img.ophim.live/uploads/movies" : data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || "https://phimimg.com";
         const formattedEpisodes = [];
         if (data.episodes && Array.isArray(data.episodes)) {
           const hasMultipleServers = data.episodes.length > 1;
-          data.episodes.forEach(server => {
-            const serverName = server.server_name || 'Vietsub';
-            (server.server_data || []).forEach(ep => {
+          data.episodes.forEach((server) => {
+            const serverName = server.server_name || "Vietsub";
+            (server.server_data || []).forEach((ep) => {
               formattedEpisodes.push({
                 name: hasMultipleServers ? `${ep.name} [${serverName}]` : ep.name,
                 slug: ep.slug,
@@ -992,10 +1030,9 @@ export default {
             });
           });
         }
-
         return new Response(JSON.stringify({
           title: movie.name || slug,
-          origin_name: movie.origin_name || '',
+          origin_name: movie.origin_name || "",
           slug: movie.slug || slug,
           poster: formatImageUrl(movie.poster_url || movie.thumb_url, cdnDomain),
           banner: formatImageUrl(movie.thumb_url || movie.poster_url, cdnDomain),
@@ -1005,182 +1042,506 @@ export default {
         return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
       }
     }
-
-    if (path.startsWith('/play/') || path === '/play') {
-      let slug = path.replace('/play/', '').replace('/play', '');
-      if (!slug && url.searchParams.has('id')) {
-        slug = url.searchParams.get('id');
+    if (path.startsWith("/play/") || path === "/play") {
+      let slug = path.replace("/play/", "").replace("/play", "");
+      if (!slug && url.searchParams.has("id")) {
+        slug = url.searchParams.get("id");
       }
-
       if (!slug) {
-        return new Response('Missing movie ID', { status: 400 });
+        return new Response("Missing movie ID", { status: 400 });
       }
-
       try {
         const { data } = await fetchWithFallback(`/phim/${slug}`);
         if (!data) {
-          return new Response('Movie not found', { status: 404 });
+          return new Response("Movie not found", { status: 404 });
         }
-
         let streamUrl = null;
-        const epSlug = url.searchParams.get('ep');
-
+        const epSlug = url.searchParams.get("ep");
         if (data.episodes && Array.isArray(data.episodes)) {
           for (const server of data.episodes) {
             const episodeList = server.server_data || [];
-            const episode = epSlug
-              ? episodeList.find((e) => e.slug === epSlug)
-              : episodeList[0];
+            const episode = epSlug ? episodeList.find((e) => e.slug === epSlug) : episodeList[0];
             if (episode && episode.link_m3u8) {
               streamUrl = episode.link_m3u8;
               break;
             }
           }
         }
-
         if (!streamUrl) {
-          return new Response('Stream link not found', { status: 404 });
+          return new Response("Stream link not found", { status: 404 });
         }
-
         return Response.redirect(streamUrl, 302);
       } catch (err) {
         return new Response(`Error resolving stream: ${err.message}`, { status: 500 });
       }
     }
-
-    if (path.startsWith('/catalog/')) {
-      const parts = path.replace('.json', '').split('/');
+    if (path.startsWith("/catalog/")) {
+      const parts = path.replace(".json", "").split("/");
       const type = parts[2];
       const catalogId = parts[3];
-      const extraStr = parts[4] || '';
-
+      const extraStr = parts[4] || "";
       let page = 1;
-      let searchQuery = '';
-
-      if (extraStr.startsWith('search=')) {
-        searchQuery = decodeURIComponent(extraStr.replace('search=', ''));
-      } else if (extraStr.startsWith('skip=')) {
-        const skip = parseInt(extraStr.replace('skip=', ''), 10) || 0;
+      let searchQuery = "";
+      if (extraStr.startsWith("search=")) {
+        searchQuery = decodeURIComponent(extraStr.replace("search=", ""));
+      } else if (extraStr.startsWith("skip=")) {
+        const skip = parseInt(extraStr.replace("skip=", ""), 10) || 0;
         page = Math.floor(skip / 24) + 1;
       }
-
       try {
         let fetchUrlPath = `/danh-sach/phim-moi-cap-nhat?page=${page}`;
-        
         if (searchQuery) {
           fetchUrlPath = `/v1/api/tim-kiem?keyword=${encodeURIComponent(searchQuery)}&page=${page}`;
-        } else if (catalogId === 'vnstream-single') {
+        } else if (catalogId === "vnstream-single") {
           fetchUrlPath = `/v1/api/danh-sach/phim-le?page=${page}`;
-        } else if (catalogId === 'vnstream-series') {
+        } else if (catalogId === "vnstream-series") {
           fetchUrlPath = `/v1/api/danh-sach/phim-bo?page=${page}`;
-        } else if (catalogId === 'vnstream-anime') {
+        } else if (catalogId === "vnstream-anime") {
           fetchUrlPath = `/v1/api/danh-sach/hoat-hinh?page=${page}`;
-        } else if (catalogId === 'vnstream-tvshows') {
+        } else if (catalogId === "vnstream-tvshows") {
           fetchUrlPath = `/v1/api/danh-sach/tv-shows?page=${page}`;
         }
-
         const { data, source } = await fetchWithFallback(fetchUrlPath);
         if (!data) {
           return new Response(JSON.stringify({ metas: [] }), { headers: corsHeaders });
         }
-
         let items = [];
         if (data.items) {
           items = data.items;
         } else if (data.data && data.data.items) {
           items = data.data.items;
         }
-
-        const cdnDomain = source === 'fallback' 
-          ? (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://img.ophim.live/uploads/movies')
-          : (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://phimimg.com');
-
+        const cdnDomain = source === "fallback" ? data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || "https://img.ophim.live/uploads/movies" : data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || "https://phimimg.com";
         const metas = items.map((item) => {
           const posterUrl = formatImageUrl(item.poster_url || item.thumb_url, cdnDomain);
-
           return {
             id: item.slug,
-            type: item.type === 'single' ? 'movie' : 'series',
+            type: item.type === "single" ? "movie" : "series",
             name: item.name,
             poster: posterUrl,
-            description: `${item.origin_name || ''} (${item.year || ''})`,
+            description: `${item.origin_name || ""} (${item.year || ""})`
           };
         });
-
         return new Response(JSON.stringify({ metas }), { headers: corsHeaders });
       } catch (err) {
         return new Response(JSON.stringify({ metas: [] }), { headers: corsHeaders });
       }
     }
-
-    if (path.startsWith('/meta/')) {
-      const parts = path.replace('.json', '').split('/');
+    if (path.startsWith("/meta/")) {
+      const parts = path.replace(".json", "").split("/");
       const type = parts[2];
       const slug = parts[3];
-
       try {
         const { data, source } = await fetchWithFallback(`/phim/${slug}`);
         if (!data || !data.movie) {
           return new Response(JSON.stringify({ meta: null }), { headers: corsHeaders });
         }
-
         const movie = data.movie;
-
-        const cdnDomain = source === 'fallback'
-          ? (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://img.ophim.live/uploads/movies')
-          : (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://phimimg.com');
-
+        const cdnDomain = source === "fallback" ? data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || "https://img.ophim.live/uploads/movies" : data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || "https://phimimg.com";
         const posterUrl = formatImageUrl(movie.poster_url || movie.thumb_url, cdnDomain);
         const backgroundUrl = formatImageUrl(movie.thumb_url || movie.poster_url, cdnDomain);
-
         const meta = {
           id: movie.slug,
-          type: movie.type === 'single' ? 'movie' : 'series',
+          type: movie.type === "single" ? "movie" : "series",
           name: movie.name,
           poster: posterUrl,
           background: backgroundUrl,
-          description: movie.content?.replace(/<[^>]*>?/gm, '') || '',
+          description: movie.content?.replace(/<[^>]*>?/gm, "") || "",
           genres: movie.category?.map((c) => c.name) || [],
-          releaseInfo: `${movie.year}`,
+          releaseInfo: `${movie.year}`
         };
-
         return new Response(JSON.stringify({ meta }), { headers: corsHeaders });
       } catch (err) {
         return new Response(JSON.stringify({ meta: null }), { headers: corsHeaders });
       }
     }
-
-    if (path.startsWith('/stream/')) {
-      const parts = path.replace('.json', '').split('/');
+    if (path.startsWith("/stream/")) {
+      const parts = path.replace(".json", "").split("/");
       const idStr = parts[3];
-      const slug = idStr.split(':')[0];
-
+      const slug = idStr.split(":")[0];
       try {
         const { data } = await fetchWithFallback(`/phim/${slug}`);
         let movieTitle = slug;
         if (data && data.movie && data.movie.name) {
           movieTitle = data.movie.name;
         }
-
         const domain = url.hostname;
-        
         const episodesUrl = `https://${domain}/episodes/${slug}.json`;
         const kfilmsDeepLink = `kfilms://${episodesUrl}?kfname=${encodeURIComponent(movieTitle)}&kftype=group`;
-
         const streams = [
           {
-            name: 'KFilms Pro',
-            title: `Mở với KFilms Pro\n(Sẽ sớm support thêm các player khác: VLC, IINA, PotPlayer, Stremio)\n${movieTitle}`,
-            externalUrl: kfilmsDeepLink,
+            name: "KFilms Pro",
+            title: `M\u1EDF v\u1EDBi KFilms Pro
+(S\u1EBD s\u1EDBm support th\xEAm c\xE1c player kh\xE1c: VLC, IINA, PotPlayer, Stremio)
+${movieTitle}`,
+            externalUrl: kfilmsDeepLink
           }
         ];
-
         return new Response(JSON.stringify({ streams }), { headers: corsHeaders });
       } catch (err) {
         return new Response(JSON.stringify({ streams: [] }), { headers: corsHeaders });
       }
     }
-
-    return new Response('FILMS ADDON Active', { status: 200, headers: corsHeaders });
-  },
+    return new Response("FILMS ADDON Active", { status: 200, headers: corsHeaders });
+  }
 };
+var drainBody = /* @__PURE__ */ __name2(async (request, env, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env);
+  } finally {
+    try {
+      if (request.body !== null && !request.bodyUsed) {
+        const reader = request.body.getReader();
+        while (!(await reader.read()).done) {
+        }
+      }
+    } catch (e) {
+      console.error("Failed to drain the unused request body.", e);
+    }
+  }
+}, "drainBody");
+var middleware_ensure_req_body_drained_default = drainBody;
+function reduceError(e) {
+  return {
+    name: e?.name,
+    message: e?.message ?? String(e),
+    stack: e?.stack,
+    cause: e?.cause === void 0 ? void 0 : reduceError(e.cause)
+  };
+}
+__name(reduceError, "reduceError");
+__name2(reduceError, "reduceError");
+var jsonError = /* @__PURE__ */ __name2(async (request, env, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env);
+  } catch (e) {
+    const error = reduceError(e);
+    const body = JSON.stringify(error);
+    const headers = {
+      "Content-Type": "application/json",
+      "MF-Experimental-Error-Stack": "true"
+    };
+    const encoded = encodeURIComponent(body);
+    if (encoded.length <= 8192) {
+      headers["MF-Experimental-Error-Stack-Payload"] = encoded;
+    }
+    return new Response(body, { status: 500, headers });
+  }
+}, "jsonError");
+var middleware_miniflare3_json_error_default = jsonError;
+var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
+  middleware_ensure_req_body_drained_default,
+  middleware_miniflare3_json_error_default
+];
+var middleware_insertion_facade_default = worker_default;
+var __facade_middleware__ = [];
+function __facade_register__(...args) {
+  __facade_middleware__.push(...args.flat());
+}
+__name(__facade_register__, "__facade_register__");
+__name2(__facade_register__, "__facade_register__");
+function __facade_invokeChain__(request, env, ctx, dispatch, middlewareChain) {
+  const [head, ...tail] = middlewareChain;
+  const middlewareCtx = {
+    dispatch,
+    next(newRequest, newEnv) {
+      return __facade_invokeChain__(newRequest, newEnv, ctx, dispatch, tail);
+    }
+  };
+  return head(request, env, ctx, middlewareCtx);
+}
+__name(__facade_invokeChain__, "__facade_invokeChain__");
+__name2(__facade_invokeChain__, "__facade_invokeChain__");
+function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
+  return __facade_invokeChain__(request, env, ctx, dispatch, [
+    ...__facade_middleware__,
+    finalMiddleware
+  ]);
+}
+__name(__facade_invoke__, "__facade_invoke__");
+__name2(__facade_invoke__, "__facade_invoke__");
+var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
+  static {
+    __name(this, "___Facade_ScheduledController__");
+  }
+  constructor(scheduledTime, cron, noRetry) {
+    this.scheduledTime = scheduledTime;
+    this.cron = cron;
+    this.#noRetry = noRetry;
+  }
+  scheduledTime;
+  cron;
+  static {
+    __name2(this, "__Facade_ScheduledController__");
+  }
+  #noRetry;
+  noRetry() {
+    if (!(this instanceof ___Facade_ScheduledController__)) {
+      throw new TypeError("Illegal invocation");
+    }
+    this.#noRetry();
+  }
+};
+function wrapExportedHandler(worker) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__ === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__.length === 0) {
+    return worker;
+  }
+  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__) {
+    __facade_register__(middleware);
+  }
+  const fetchDispatcher = /* @__PURE__ */ __name2(function(request, env, ctx) {
+    if (worker.fetch === void 0) {
+      throw new Error("Handler does not export a fetch() function.");
+    }
+    return worker.fetch(request, env, ctx);
+  }, "fetchDispatcher");
+  return {
+    ...worker,
+    fetch(request, env, ctx) {
+      const dispatcher = /* @__PURE__ */ __name2(function(type, init) {
+        if (type === "scheduled" && worker.scheduled !== void 0) {
+          const controller = new __Facade_ScheduledController__(
+            Date.now(),
+            init.cron ?? "",
+            () => {
+            }
+          );
+          return worker.scheduled(controller, env, ctx);
+        }
+      }, "dispatcher");
+      return __facade_invoke__(request, env, ctx, dispatcher, fetchDispatcher);
+    }
+  };
+}
+__name(wrapExportedHandler, "wrapExportedHandler");
+__name2(wrapExportedHandler, "wrapExportedHandler");
+function wrapWorkerEntrypoint(klass) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__ === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__.length === 0) {
+    return klass;
+  }
+  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__) {
+    __facade_register__(middleware);
+  }
+  return class extends klass {
+    #fetchDispatcher = /* @__PURE__ */ __name2((request, env, ctx) => {
+      this.env = env;
+      this.ctx = ctx;
+      if (super.fetch === void 0) {
+        throw new Error("Entrypoint class does not define a fetch() function.");
+      }
+      return super.fetch(request);
+    }, "#fetchDispatcher");
+    #dispatcher = /* @__PURE__ */ __name2((type, init) => {
+      if (type === "scheduled" && super.scheduled !== void 0) {
+        const controller = new __Facade_ScheduledController__(
+          Date.now(),
+          init.cron ?? "",
+          () => {
+          }
+        );
+        return super.scheduled(controller);
+      }
+    }, "#dispatcher");
+    fetch(request) {
+      return __facade_invoke__(
+        request,
+        this.env,
+        this.ctx,
+        this.#dispatcher,
+        this.#fetchDispatcher
+      );
+    }
+  };
+}
+__name(wrapWorkerEntrypoint, "wrapWorkerEntrypoint");
+__name2(wrapWorkerEntrypoint, "wrapWorkerEntrypoint");
+var WRAPPED_ENTRY;
+if (typeof middleware_insertion_facade_default === "object") {
+  WRAPPED_ENTRY = wrapExportedHandler(middleware_insertion_facade_default);
+} else if (typeof middleware_insertion_facade_default === "function") {
+  WRAPPED_ENTRY = wrapWorkerEntrypoint(middleware_insertion_facade_default);
+}
+var middleware_loader_entry_default = WRAPPED_ENTRY;
+
+// ../../../.npm/_npx/32026684e21afda6/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
+var drainBody2 = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env);
+  } finally {
+    try {
+      if (request.body !== null && !request.bodyUsed) {
+        const reader = request.body.getReader();
+        while (!(await reader.read()).done) {
+        }
+      }
+    } catch (e) {
+      console.error("Failed to drain the unused request body.", e);
+    }
+  }
+}, "drainBody");
+var middleware_ensure_req_body_drained_default2 = drainBody2;
+
+// ../../../.npm/_npx/32026684e21afda6/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts
+function reduceError2(e) {
+  return {
+    name: e?.name,
+    message: e?.message ?? String(e),
+    stack: e?.stack,
+    cause: e?.cause === void 0 ? void 0 : reduceError2(e.cause)
+  };
+}
+__name(reduceError2, "reduceError");
+var jsonError2 = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env);
+  } catch (e) {
+    const error = reduceError2(e);
+    const body = JSON.stringify(error);
+    const headers = {
+      "Content-Type": "application/json",
+      "MF-Experimental-Error-Stack": "true"
+    };
+    const encoded = encodeURIComponent(body);
+    if (encoded.length <= 8192) {
+      headers["MF-Experimental-Error-Stack-Payload"] = encoded;
+    }
+    return new Response(body, { status: 500, headers });
+  }
+}, "jsonError");
+var middleware_miniflare3_json_error_default2 = jsonError2;
+
+// .wrangler/tmp/bundle-EyHNY4/middleware-insertion-facade.js
+var __INTERNAL_WRANGLER_MIDDLEWARE__2 = [
+  middleware_ensure_req_body_drained_default2,
+  middleware_miniflare3_json_error_default2
+];
+var middleware_insertion_facade_default2 = middleware_loader_entry_default;
+
+// ../../../.npm/_npx/32026684e21afda6/node_modules/wrangler/templates/middleware/common.ts
+var __facade_middleware__2 = [];
+function __facade_register__2(...args) {
+  __facade_middleware__2.push(...args.flat());
+}
+__name(__facade_register__2, "__facade_register__");
+function __facade_invokeChain__2(request, env, ctx, dispatch, middlewareChain) {
+  const [head, ...tail] = middlewareChain;
+  const middlewareCtx = {
+    dispatch,
+    next(newRequest, newEnv) {
+      return __facade_invokeChain__2(newRequest, newEnv, ctx, dispatch, tail);
+    }
+  };
+  return head(request, env, ctx, middlewareCtx);
+}
+__name(__facade_invokeChain__2, "__facade_invokeChain__");
+function __facade_invoke__2(request, env, ctx, dispatch, finalMiddleware) {
+  return __facade_invokeChain__2(request, env, ctx, dispatch, [
+    ...__facade_middleware__2,
+    finalMiddleware
+  ]);
+}
+__name(__facade_invoke__2, "__facade_invoke__");
+
+// .wrangler/tmp/bundle-EyHNY4/middleware-loader.entry.ts
+var __Facade_ScheduledController__2 = class ___Facade_ScheduledController__2 {
+  constructor(scheduledTime, cron, noRetry) {
+    this.scheduledTime = scheduledTime;
+    this.cron = cron;
+    this.#noRetry = noRetry;
+  }
+  scheduledTime;
+  cron;
+  static {
+    __name(this, "__Facade_ScheduledController__");
+  }
+  #noRetry;
+  noRetry() {
+    if (!(this instanceof ___Facade_ScheduledController__2)) {
+      throw new TypeError("Illegal invocation");
+    }
+    this.#noRetry();
+  }
+};
+function wrapExportedHandler2(worker) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__2 === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__2.length === 0) {
+    return worker;
+  }
+  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__2) {
+    __facade_register__2(middleware);
+  }
+  const fetchDispatcher = /* @__PURE__ */ __name(function(request, env, ctx) {
+    if (worker.fetch === void 0) {
+      throw new Error("Handler does not export a fetch() function.");
+    }
+    return worker.fetch(request, env, ctx);
+  }, "fetchDispatcher");
+  return {
+    ...worker,
+    fetch(request, env, ctx) {
+      const dispatcher = /* @__PURE__ */ __name(function(type, init) {
+        if (type === "scheduled" && worker.scheduled !== void 0) {
+          const controller = new __Facade_ScheduledController__2(
+            Date.now(),
+            init.cron ?? "",
+            () => {
+            }
+          );
+          return worker.scheduled(controller, env, ctx);
+        }
+      }, "dispatcher");
+      return __facade_invoke__2(request, env, ctx, dispatcher, fetchDispatcher);
+    }
+  };
+}
+__name(wrapExportedHandler2, "wrapExportedHandler");
+function wrapWorkerEntrypoint2(klass) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__2 === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__2.length === 0) {
+    return klass;
+  }
+  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__2) {
+    __facade_register__2(middleware);
+  }
+  return class extends klass {
+    #fetchDispatcher = /* @__PURE__ */ __name((request, env, ctx) => {
+      this.env = env;
+      this.ctx = ctx;
+      if (super.fetch === void 0) {
+        throw new Error("Entrypoint class does not define a fetch() function.");
+      }
+      return super.fetch(request);
+    }, "#fetchDispatcher");
+    #dispatcher = /* @__PURE__ */ __name((type, init) => {
+      if (type === "scheduled" && super.scheduled !== void 0) {
+        const controller = new __Facade_ScheduledController__2(
+          Date.now(),
+          init.cron ?? "",
+          () => {
+          }
+        );
+        return super.scheduled(controller);
+      }
+    }, "#dispatcher");
+    fetch(request) {
+      return __facade_invoke__2(
+        request,
+        this.env,
+        this.ctx,
+        this.#dispatcher,
+        this.#fetchDispatcher
+      );
+    }
+  };
+}
+__name(wrapWorkerEntrypoint2, "wrapWorkerEntrypoint");
+var WRAPPED_ENTRY2;
+if (typeof middleware_insertion_facade_default2 === "object") {
+  WRAPPED_ENTRY2 = wrapExportedHandler2(middleware_insertion_facade_default2);
+} else if (typeof middleware_insertion_facade_default2 === "function") {
+  WRAPPED_ENTRY2 = wrapWorkerEntrypoint2(middleware_insertion_facade_default2);
+}
+var middleware_loader_entry_default2 = WRAPPED_ENTRY2;
+export {
+  __INTERNAL_WRANGLER_MIDDLEWARE__2 as __INTERNAL_WRANGLER_MIDDLEWARE__,
+  middleware_loader_entry_default2 as default
+};
+//# sourceMappingURL=bundledWorker-0.9717565187518361.js.map

@@ -7,7 +7,7 @@ const FETCH_HEADERS = {
   'Accept': 'application/json'
 };
 
-async function fetchSingle(url, timeoutMs) {
+async function fetchJsonSingle(url, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -16,7 +16,10 @@ async function fetchSingle(url, timeoutMs) {
       signal: controller.signal,
     });
     if (res.ok) {
-      return res;
+      const data = await res.json();
+      if (data && data.status !== false && data.status !== 'error' && data.msg !== 'slug error' && data.msg !== 'hmmm!') {
+        return data;
+      }
     }
   } catch (e) {
     // Timeout or network error — fail fast
@@ -26,16 +29,16 @@ async function fetchSingle(url, timeoutMs) {
   return null;
 }
 
-async function fetchWithFallback(path, { timeoutMs = 2500 } = {}) {
-  // Try primary API (phimapi.com) with 2.5s fast timeout
-  let res = await fetchSingle(`${API_PRIMARY}${path}`, timeoutMs);
-  if (res) return { res, source: 'primary' };
+async function fetchWithFallback(path, { timeoutMs = 4000 } = {}) {
+  // Try primary API (phimapi.com) with 4s timeout
+  let data = await fetchJsonSingle(`${API_PRIMARY}${path}`, timeoutMs);
+  if (data) return { data, source: 'primary' };
 
-  // Fallback immediately to secondary API (ophim1.com) if primary hangs or fails
-  res = await fetchSingle(`${API_FALLBACK}${path}`, timeoutMs);
-  if (res) return { res, source: 'fallback' };
+  // Fallback immediately to secondary API (ophim1.com) if primary fails or returns error JSON
+  data = await fetchJsonSingle(`${API_FALLBACK}${path}`, timeoutMs);
+  if (data) return { data, source: 'fallback' };
 
-  return { res: null, source: null };
+  return { data: null, source: null };
 }
 
 function formatImageUrl(imgPath, cdnDomain = 'https://phimimg.com') {
@@ -962,27 +965,33 @@ export default {
       }
 
       try {
-        const { res, source } = await fetchWithFallback(`/phim/${slug}`);
-        if (!res || !res.ok) {
+        const { data, source } = await fetchWithFallback(`/phim/${slug}`);
+        if (!data) {
           return new Response(JSON.stringify({ error: 'Movie not found' }), { status: 404, headers: corsHeaders });
         }
 
-        const data = await res.json();
         const movie = data.movie || {};
         const cdnDomain = source === 'fallback' 
           ? (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://img.ophim.live/uploads/movies')
           : (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://phimimg.com');
 
-        const episodeList = (data.episodes && data.episodes[0] && data.episodes[0].server_data) || [];
-
-        const formattedEpisodes = episodeList.map(ep => ({
-          name: ep.name,
-          slug: ep.slug,
-          filename: ep.filename,
-          url: ep.link_m3u8,
-          link_embed: ep.link_embed,
-          server_name: data.episodes[0]?.server_name || 'Vietsub'
-        }));
+        const formattedEpisodes = [];
+        if (data.episodes && Array.isArray(data.episodes)) {
+          const hasMultipleServers = data.episodes.length > 1;
+          data.episodes.forEach(server => {
+            const serverName = server.server_name || 'Vietsub';
+            (server.server_data || []).forEach(ep => {
+              formattedEpisodes.push({
+                name: hasMultipleServers ? `${ep.name} [${serverName}]` : ep.name,
+                slug: ep.slug,
+                filename: ep.filename,
+                url: ep.link_m3u8,
+                link_embed: ep.link_embed,
+                server_name: serverName
+              });
+            });
+          });
+        }
 
         return new Response(JSON.stringify({
           title: movie.name || slug,
@@ -1008,23 +1017,24 @@ export default {
       }
 
       try {
-        const { res } = await fetchWithFallback(`/phim/${slug}`);
-        if (!res || !res.ok) {
+        const { data } = await fetchWithFallback(`/phim/${slug}`);
+        if (!data) {
           return new Response('Movie not found', { status: 404 });
         }
 
-        const data = await res.json();
         let streamUrl = null;
-
         const epSlug = url.searchParams.get('ep');
 
-        if (data.episodes && data.episodes.length > 0) {
-          const episodeList = data.episodes[0].server_data || [];
-          const episode = epSlug
-            ? episodeList.find((e) => e.slug === epSlug) || episodeList[0]
-            : episodeList[0];
-          if (episode) {
-            streamUrl = episode.link_m3u8;
+        if (data.episodes && Array.isArray(data.episodes)) {
+          for (const server of data.episodes) {
+            const episodeList = server.server_data || [];
+            const episode = epSlug
+              ? episodeList.find((e) => e.slug === epSlug)
+              : episodeList[0];
+            if (episode && episode.link_m3u8) {
+              streamUrl = episode.link_m3u8;
+              break;
+            }
           }
         }
 
@@ -1069,12 +1079,10 @@ export default {
           fetchUrlPath = `/v1/api/danh-sach/tv-shows?page=${page}`;
         }
 
-        const { res, source } = await fetchWithFallback(fetchUrlPath);
-        if (!res || !res.ok) {
+        const { data, source } = await fetchWithFallback(fetchUrlPath);
+        if (!data) {
           return new Response(JSON.stringify({ metas: [] }), { headers: corsHeaders });
         }
-
-        const data = await res.json();
 
         let items = [];
         if (data.items) {
@@ -1111,17 +1119,12 @@ export default {
       const slug = parts[3];
 
       try {
-        const { res, source } = await fetchWithFallback(`/phim/${slug}`);
-        if (!res || !res.ok) {
+        const { data, source } = await fetchWithFallback(`/phim/${slug}`);
+        if (!data || !data.movie) {
           return new Response(JSON.stringify({ meta: null }), { headers: corsHeaders });
         }
 
-        const data = await res.json();
         const movie = data.movie;
-
-        if (!movie) {
-          return new Response(JSON.stringify({ meta: null }), { headers: corsHeaders });
-        }
 
         const cdnDomain = source === 'fallback'
           ? (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://img.ophim.live/uploads/movies')
@@ -1153,13 +1156,10 @@ export default {
       const slug = idStr.split(':')[0];
 
       try {
-        const { res } = await fetchWithFallback(`/phim/${slug}`);
+        const { data } = await fetchWithFallback(`/phim/${slug}`);
         let movieTitle = slug;
-        if (res && res.ok) {
-          const data = await res.json();
-          if (data.movie && data.movie.name) {
-            movieTitle = data.movie.name;
-          }
+        if (data && data.movie && data.movie.name) {
+          movieTitle = data.movie.name;
         }
 
         const domain = url.hostname;
