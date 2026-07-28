@@ -796,10 +796,10 @@ function getHtmlPage(domain) {
 
         allMovies = reset ? newMovies : [...allMovies, ...newMovies];
 
-        grid.innerHTML = allMovies.map(movie => `
-          <div class="movie-card" onclick="openMovieDetail('${escapeHtml(movie.id)}')">
+        grid.innerHTML = allMovies.map(movie => \`
+          <div class="movie-card" onclick="openMovieDetail('\${escapeHtml(movie.id)}')">
             <div class="poster-wrapper">
-              <img class="poster-img" src="${escapeHtml(movie.poster)}" alt="${escapeHtml(movie.name)}" loading="lazy">
+              <img class="poster-img" src="\${escapeHtml(movie.poster)}" alt="\${escapeHtml(movie.name)}" loading="lazy">
               <div class="play-overlay">
                 <div class="btn-play-icon">
                   <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -807,11 +807,11 @@ function getHtmlPage(domain) {
               </div>
             </div>
             <div class="movie-info">
-              <div class="movie-title">${escapeHtml(movie.name)}</div>
-              <div class="movie-meta">${escapeHtml(movie.description) || 'Vietsub'}</div>
+              <div class="movie-title">\${escapeHtml(movie.name)}</div>
+              <div class="movie-meta">\${escapeHtml(movie.description) || 'Vietsub'}</div>
             </div>
           </div>
-        `).join('');
+        \`).join('');
 
         btnLoadMore.style.display = newMovies.length < 24 ? 'none' : 'inline-block';
         btnLoadMore.innerText = 'Tải Thêm Phim 🔽 (Đã hiển thị ' + allMovies.length + ' phim)';
