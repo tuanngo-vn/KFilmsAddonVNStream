@@ -749,6 +749,16 @@ function getHtmlPage(domain) {
     let isLoading = false;
     let allMovies = [];
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     async function loadMovies(reset = true) {
       if (isLoading) return;
       isLoading = true;
@@ -772,6 +782,7 @@ function getHtmlPage(domain) {
         }
         
         const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         
         const newMovies = data.metas || [];
@@ -785,10 +796,10 @@ function getHtmlPage(domain) {
 
         allMovies = reset ? newMovies : [...allMovies, ...newMovies];
 
-        grid.innerHTML = allMovies.map(movie => \`
-          <div class="movie-card" onclick="openMovieDetail('\${movie.id}')">
+        grid.innerHTML = allMovies.map(movie => `
+          <div class="movie-card" onclick="openMovieDetail('${escapeHtml(movie.id)}')">
             <div class="poster-wrapper">
-              <img class="poster-img" src="\${movie.poster}" alt="\${movie.name}" loading="lazy">
+              <img class="poster-img" src="${escapeHtml(movie.poster)}" alt="${escapeHtml(movie.name)}" loading="lazy">
               <div class="play-overlay">
                 <div class="btn-play-icon">
                   <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -796,16 +807,16 @@ function getHtmlPage(domain) {
               </div>
             </div>
             <div class="movie-info">
-              <div class="movie-title">\${movie.name}</div>
-              <div class="movie-meta">\${movie.description || 'Vietsub'}</div>
+              <div class="movie-title">${escapeHtml(movie.name)}</div>
+              <div class="movie-meta">${escapeHtml(movie.description) || 'Vietsub'}</div>
             </div>
           </div>
-        \`).join('');
+        `).join('');
 
         btnLoadMore.style.display = newMovies.length < 24 ? 'none' : 'inline-block';
         btnLoadMore.innerText = 'Tải Thêm Phim 🔽 (Đã hiển thị ' + allMovies.length + ' phim)';
       } catch (err) {
-        if (reset) grid.innerHTML = '<div class="loading-spinner">Lỗi khi tải dữ liệu phim.</div>';
+        if (reset) grid.innerHTML = '<div class="loading-spinner">Lỗi khi tải dữ liệu phim. Hãy thử tải lại trang.</div>';
       } finally {
         isLoading = false;
       }
