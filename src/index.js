@@ -841,7 +841,7 @@ function getHtmlPage(domain) {
       currentCatalog = catalogId;
       currentSearch = '';
       document.getElementById('searchInput').value = '';
-      const cleanTitle = CATEGORY_NAMES[catalogId] || btn.innerText.replace(/\p{Extended_Pictographic}|\p{Emoji_Presentation}/gu, '').trim();
+      const cleanTitle = CATEGORY_NAMES[catalogId] || btn.innerText.trim();
       document.getElementById('sectionTitle').innerText = cleanTitle;
       loadMovies(true);
     }
