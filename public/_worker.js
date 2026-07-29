@@ -63,6 +63,159 @@ function formatImageUrl(imgPath, cdnDomain = 'https://phimimg.com') {
   return `${base}/${cleanPath}`;
 }
 
+function rewriteM3u8Content(content, baseUrl, workerDomain) {
+  const lines = content.split(/\r?\n/);
+  const isMaster = content.includes('#EXT-X-STREAM-INF');
+  const adRegex = /(?:^|\/|\.|\?|=)(?:ad|ads|qc|quangcao|promo|banner|intro|doubleclick|bet88|fb88|789bet|okvip|hi88|jun88|shbet|new88|kubet|f8bet|bk8|88bet|nha-cai|song-bai)\b/i;
+
+  if (isMaster) {
+    const resultLines = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('#EXT-X-STREAM-INF')) {
+        resultLines.push(lines[i]);
+        if (i + 1 < lines.length && !lines[i + 1].trim().startsWith('#')) {
+          i++;
+          const variantPath = lines[i].trim();
+          let absVariantUrl;
+          try {
+            absVariantUrl = new URL(variantPath, baseUrl).href;
+          } catch (e) {
+            absVariantUrl = variantPath;
+          }
+          const proxiedVariantUrl = `https://${workerDomain}/m3u8-proxy?url=${encodeURIComponent(absVariantUrl)}`;
+          resultLines.push(proxiedVariantUrl);
+        }
+      } else {
+        resultLines.push(lines[i]);
+      }
+    }
+    return resultLines.join('\n');
+  }
+
+  // Media Playlist processing
+  const outputLines = [];
+  let pendingTags = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    if (line.startsWith('#')) {
+      pendingTags.push(line);
+    } else {
+      // Segment URL line
+      let absSegmentUrl;
+      try {
+        absSegmentUrl = new URL(line, baseUrl).href;
+      } catch (e) {
+        absSegmentUrl = line;
+      }
+
+      // Check if this segment or any of its tags matches ad patterns
+      const isAdSegment = adRegex.test(absSegmentUrl) || pendingTags.some(tag => adRegex.test(tag));
+
+      if (!isAdSegment) {
+        outputLines.push(...pendingTags);
+        outputLines.push(absSegmentUrl);
+      }
+      pendingTags = [];
+    }
+  }
+
+  // Push trailing tags (e.g. #EXT-X-ENDLIST)
+  if (pendingTags.length > 0) {
+    const endTags = pendingTags.filter(t => t.startsWith('#EXT-X-ENDLIST') || t.startsWith('#EXT-X-INDEPENDENT-SEGMENTS'));
+    outputLines.push(...endTags);
+  }
+
+  // Remove leading or consecutive #EXT-X-DISCONTINUITY tags resulting from ad segment removal
+  const finalLines = [];
+  let prevWasDiscontinuity = false;
+
+  for (const line of outputLines) {
+    if (line === '#EXT-X-DISCONTINUITY') {
+      if (!prevWasDiscontinuity && finalLines.length > 0) {
+        finalLines.push(line);
+        prevWasDiscontinuity = true;
+      }
+    } else {
+      finalLines.push(line);
+      if (!line.startsWith('#')) {
+        prevWasDiscontinuity = false;
+      }
+    }
+  }
+
+  return finalLines.join('\n');
+}
+
+async function handleM3u8Proxy(request, targetUrl, workerDomain) {
+  try {
+    let cleanTargetUrl = targetUrl;
+    
+    // Clean up extra KFilms App parameters appended to targetUrl if any
+    try {
+      const parsed = new URL(targetUrl);
+      parsed.searchParams.delete('kfname');
+      parsed.searchParams.delete('kftype');
+      parsed.searchParams.delete('kfid');
+      parsed.searchParams.delete('kfep');
+      cleanTargetUrl = parsed.toString();
+    } catch (e) {
+      cleanTargetUrl = targetUrl.split('?kfname=')[0].split('&kfname=')[0]
+                               .split('?kftype=')[0].split('&kftype=')[0];
+    }
+
+    let targetObj;
+    try {
+      targetObj = new URL(cleanTargetUrl);
+    } catch (e) {
+      return new Response(`Invalid target URL: ${cleanTargetUrl}`, { status: 400 });
+    }
+
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Referer': targetObj.origin + '/',
+      'Origin': targetObj.origin,
+      'Accept': '*/*'
+    };
+
+    let res = await fetch(cleanTargetUrl, { headers });
+
+    // Fallback: If original fetch failed, try stripping query parameters
+    if (!res.ok && cleanTargetUrl.includes('?')) {
+      const urlNoQuery = cleanTargetUrl.split('?')[0];
+      const resFallback = await fetch(urlNoQuery, { headers });
+      if (resFallback.ok) {
+        res = resFallback;
+        cleanTargetUrl = urlNoQuery;
+      }
+    }
+
+    if (!res.ok) {
+      return new Response(`Upstream fetch failed with status ${res.status}`, { status: res.status });
+    }
+
+    const text = await res.text();
+    const cleanText = rewriteM3u8Content(text, cleanTargetUrl, workerDomain);
+
+    return new Response(cleanText, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/vnd.apple.mpegurl; charset=utf-8',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Cache-Control': 'public, max-age=3600'
+      }
+    });
+  } catch (err) {
+    return new Response(`M3U8 Proxy Error: ${err.message}`, { status: 500 });
+  }
+}
+
+
+
 const manifest = {
   "id": "community.VNStream",
   "version": "1.6.0",
@@ -967,6 +1120,25 @@ export default {
       return new Response(JSON.stringify(manifest), { headers: corsHeaders });
     }
 
+    if (path.startsWith('/m3u8-proxy') || path.startsWith('/proxy-m3u8')) {
+      let targetUrl = url.searchParams.get('url');
+      if (!targetUrl) {
+        const rawMatch = request.url.match(/[?&]url=([^&]+)/);
+        if (rawMatch) {
+          try {
+            targetUrl = decodeURIComponent(rawMatch[1]);
+          } catch (e) {
+            targetUrl = rawMatch[1];
+          }
+        }
+      }
+
+      if (!targetUrl) {
+        return new Response('Missing url parameter', { status: 400, headers: corsHeaders });
+      }
+      return await handleM3u8Proxy(request, targetUrl, url.hostname);
+    }
+
     // Endpoint /episodes/:slug.json (Trả về thông tin chi tiết và danh sách các tập phim cho KFilms App)
     if (path.startsWith('/episodes/')) {
       const slug = path.replace('/episodes/', '').replace('.json', '');
@@ -986,17 +1158,21 @@ export default {
           ? (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://img.ophim.live/uploads/movies')
           : (data.pathImage || data.data?.APP_DOMAIN_CDN_IMAGE || 'https://phimimg.com');
 
+        const domain = url.hostname;
         const formattedEpisodes = [];
         if (data.episodes && Array.isArray(data.episodes)) {
           const hasMultipleServers = data.episodes.length > 1;
           data.episodes.forEach(server => {
             const serverName = server.server_name || 'Vietsub';
             (server.server_data || []).forEach(ep => {
+              const rawM3u8 = ep.link_m3u8 || '';
+              const proxiedUrl = rawM3u8 ? `https://${domain}/m3u8-proxy?url=${encodeURIComponent(rawM3u8)}` : '';
               formattedEpisodes.push({
                 name: hasMultipleServers ? `${ep.name} [${serverName}]` : ep.name,
                 slug: ep.slug,
                 filename: ep.filename,
-                url: ep.link_m3u8,
+                url: proxiedUrl,
+                raw_url: rawM3u8,
                 link_embed: ep.link_embed,
                 server_name: serverName
               });
@@ -1053,7 +1229,8 @@ export default {
           return new Response('Stream link not found', { status: 404 });
         }
 
-        return Response.redirect(streamUrl, 302);
+        const proxiedStreamUrl = `https://${url.hostname}/m3u8-proxy?url=${encodeURIComponent(streamUrl)}`;
+        return Response.redirect(proxiedStreamUrl, 302);
       } catch (err) {
         return new Response(`Error resolving stream: ${err.message}`, { status: 500 });
       }
