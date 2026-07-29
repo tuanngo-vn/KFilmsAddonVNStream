@@ -150,51 +150,82 @@ function rewriteM3u8Content(content, baseUrl, workerDomain) {
   return finalLines.join('\n');
 }
 
-async function handleM3u8Proxy(request, targetUrl, workerDomain) {
+function extractCleanUrl(rawUrl) {
+  if (!rawUrl) return '';
+  const match = rawUrl.match(/^(https?:\/\/[^\s?#]+\.m3u8)/i);
+  if (match) {
+    return match[1];
+  }
   try {
-    let cleanTargetUrl = targetUrl;
-    
-    // Clean up extra KFilms App parameters appended to targetUrl if any
-    try {
-      const parsed = new URL(targetUrl);
-      parsed.searchParams.delete('kfname');
-      parsed.searchParams.delete('kftype');
-      parsed.searchParams.delete('kfid');
-      parsed.searchParams.delete('kfep');
-      cleanTargetUrl = parsed.toString();
-    } catch (e) {
-      cleanTargetUrl = targetUrl.split('?kfname=')[0].split('&kfname=')[0]
-                               .split('?kftype=')[0].split('&kftype=')[0];
+    const u = new URL(rawUrl);
+    u.searchParams.delete('kfname');
+    u.searchParams.delete('kftype');
+    u.searchParams.delete('kfid');
+    u.searchParams.delete('kfep');
+    return u.toString();
+  } catch (e) {
+    return rawUrl.split('?kfname=')[0].split('&kfname=')[0];
+  }
+}
+
+async function handleM3u8Proxy(request, targetUrl, workerDomain) {
+  const errHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Content-Type': 'text/plain; charset=utf-8'
+  };
+
+  try {
+    const cleanTargetUrl = extractCleanUrl(targetUrl);
+    if (!cleanTargetUrl || !cleanTargetUrl.startsWith('http')) {
+      return new Response(`Invalid target URL: ${targetUrl}`, { status: 400, headers: errHeaders });
     }
 
     let targetObj;
     try {
       targetObj = new URL(cleanTargetUrl);
     } catch (e) {
-      return new Response(`Invalid target URL: ${cleanTargetUrl}`, { status: 400 });
+      return new Response(`Invalid target URL format: ${cleanTargetUrl}`, { status: 400, headers: errHeaders });
     }
 
-    const headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Referer': targetObj.origin + '/',
-      'Origin': targetObj.origin,
-      'Accept': '*/*'
-    };
+    const headerConfigs = [
+      {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*'
+      },
+      {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://phimapi.com/',
+        'Accept': '*/*'
+      },
+      {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': targetObj.origin + '/',
+        'Accept': '*/*'
+      }
+    ];
 
-    let res = await fetch(cleanTargetUrl, { headers });
+    let res = null;
+    let lastStatus = 500;
 
-    // Fallback: If original fetch failed, try stripping query parameters
-    if (!res.ok && cleanTargetUrl.includes('?')) {
-      const urlNoQuery = cleanTargetUrl.split('?')[0];
-      const resFallback = await fetch(urlNoQuery, { headers });
-      if (resFallback.ok) {
-        res = resFallback;
-        cleanTargetUrl = urlNoQuery;
+    for (const headers of headerConfigs) {
+      try {
+        const response = await fetch(cleanTargetUrl, { headers, redirect: 'follow' });
+        if (response.ok) {
+          res = response;
+          break;
+        }
+        lastStatus = response.status;
+      } catch (err) {
+        // Continue to next header config
       }
     }
 
-    if (!res.ok) {
-      return new Response(`Upstream fetch failed with status ${res.status}`, { status: res.status });
+    if (!res) {
+      return new Response(`Upstream fetch failed with status ${lastStatus} for ${cleanTargetUrl}`, { 
+        status: lastStatus, 
+        headers: errHeaders 
+      });
     }
 
     const text = await res.text();
@@ -210,9 +241,10 @@ async function handleM3u8Proxy(request, targetUrl, workerDomain) {
       }
     });
   } catch (err) {
-    return new Response(`M3U8 Proxy Error: ${err.message}`, { status: 500 });
+    return new Response(`M3U8 Proxy Error: ${err.message}`, { status: 500, headers: errHeaders });
   }
 }
+
 
 
 
@@ -1054,30 +1086,9 @@ function getHtmlPage(domain) {
       if (!currentMovie) return;
       const domainHost = window.location.hostname;
       const kfname = 'kfname=' + encodeURIComponent(currentMovie.name);
-
-      if (currentMovie.type === 'series') {
-        // Series: hand off the /episodes/{id}.json list (&kftype=group) so
-        // KFilms imports every episode as one group in a single shot.
-        const episodesUrl = 'https://' + domainHost + '/episodes/' + currentMovie.id + '.json';
-        window.location.href = 'kfilms://' + episodesUrl + '?' + kfname + '&kftype=group';
-        showToast('Đang kích hoạt KFilms Pro...');
-        return;
-      }
-
-      // Movie: resolve the raw stream link up front (via the same
-      // /episodes/ endpoint, which already retries phimapi.com's flaky
-      // upstream) instead of handing KFilms a link that still depends on
-      // this site being reachable every time the user presses play later.
-      try {
-        const res = await fetch('https://' + domainHost + '/episodes/' + currentMovie.id + '.json');
-        const data = await res.json();
-        const rawUrl = data.episodes && data.episodes[0] && data.episodes[0].url;
-        if (!rawUrl) throw new Error('no stream url');
-        window.location.href = 'kfilms://' + rawUrl + '?' + kfname;
-        showToast('Đang kích hoạt KFilms Pro...');
-      } catch (err) {
-        showToast('Không lấy được link phát, thử lại sau.');
-      }
+      const episodesUrl = 'https://' + domainHost + '/episodes/' + currentMovie.id + '.json';
+      window.location.href = 'kfilms://' + episodesUrl + '?' + kfname + '&kftype=group';
+      showToast('Đang kích hoạt KFilms Pro...');
     }
 
     function showToast(msg) {
@@ -1136,7 +1147,7 @@ export default {
       if (!targetUrl) {
         return new Response('Missing url parameter', { status: 400, headers: corsHeaders });
       }
-      return await handleM3u8Proxy(request, targetUrl, url.hostname);
+      return Response.redirect(`https://proxyvn.downcode.org/m3u8-proxy?url=${encodeURIComponent(targetUrl)}`, 302);
     }
 
     // Endpoint /episodes/:slug.json (Trả về thông tin chi tiết và danh sách các tập phim cho KFilms App)
@@ -1166,7 +1177,7 @@ export default {
             const serverName = server.server_name || 'Vietsub';
             (server.server_data || []).forEach(ep => {
               const rawM3u8 = ep.link_m3u8 || '';
-              const proxiedUrl = rawM3u8 ? `https://${domain}/m3u8-proxy?url=${encodeURIComponent(rawM3u8)}` : '';
+              const proxiedUrl = rawM3u8 ? `https://proxyvn.downcode.org/m3u8-proxy?url=${encodeURIComponent(rawM3u8)}` : '';
               formattedEpisodes.push({
                 name: hasMultipleServers ? `${ep.name} [${serverName}]` : ep.name,
                 slug: ep.slug,
@@ -1229,7 +1240,7 @@ export default {
           return new Response('Stream link not found', { status: 404 });
         }
 
-        const proxiedStreamUrl = `https://${url.hostname}/m3u8-proxy?url=${encodeURIComponent(streamUrl)}`;
+        const proxiedStreamUrl = `https://proxyvn.downcode.org/m3u8-proxy?url=${encodeURIComponent(streamUrl)}`;
         return Response.redirect(proxiedStreamUrl, 302);
       } catch (err) {
         return new Response(`Error resolving stream: ${err.message}`, { status: 500 });
