@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-const AD_REGEX = /(?:^|\/|\.|\?|=)(?:ad|ads|qc|quangcao|promo|banner|intro|doubleclick|bet88|fb88|789bet|okvip|hi88|jun88|shbet|new88|kubet|f8bet|bk8|88bet|nha-cai|song-bai)\b/i;
+const AD_REGEX = /(?:^|\/|\.|\?|=|_|-)(?:ad|ads|qc|quangcao|quang_cao|promo|banner|intro|doubleclick|sponsor|bet88|fb88|789bet|okvip|hi88|jun88|shbet|new88|kubet|f8bet|bk8|88bet|nha-cai|nha_cai|song-bai|go88|sunwin|w88|fun88|dafabet|hitclub|rikvip|79king|b52|cwin|m88|12bet|188bet|v8club|ee88|789club|99ok|kg88|mb66|zoo88|6686|123b|888b|bj88|mu88|royal88|tf88|sbotop|king88|hello88|88clb|v9bet|win79|vinwin|k9win|iwin|k8|fi88)\b/i;
 
 function extractCleanUrl(rawUrl) {
   if (!rawUrl) return '';
